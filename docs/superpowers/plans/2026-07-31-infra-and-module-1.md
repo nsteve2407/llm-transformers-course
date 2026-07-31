@@ -252,11 +252,9 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
       - name: Build with Jekyll
-        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        run: bundle exec jekyll build
         env:
           JEKYLL_ENV: production
-      - id: pages
-        uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: "_site"
@@ -563,11 +561,9 @@ See [Module 1 Reading List](reading.html) for required and optional papers, plus
 Part A: implement a 2-layer MLP for MNIST using raw tensor ops only — forward pass, manual backward pass, plain SGD, no `.backward()` — and verify against autograd. Part B: reimplement with autograd, train with SGD / SGD+momentum / Adam / AdamW vs. Adam+L2, and plot the AdamW/Adam+L2 divergence. Part C: add Dropout + BatchNorm and demonstrate train vs. eval-mode behavior.
 
 {% include quiz.html slug=page.slug quiz=site.data.quizzes["01_dnn_refresher"] %}
-
-{% include chat-widget.html slug=page.slug title=page.title %}
 ```
 
-Note: Jekyll turns `_data/quizzes/01_dnn_refresher.yml` (created in Task 7) into `site.data.quizzes["01_dnn_refresher"]` — a bracket lookup, not a dotted identifier, since the filename starts with a digit.
+Note: Jekyll turns `_data/quizzes/01_dnn_refresher.yml` (created in Task 7) into `site.data.quizzes["01_dnn_refresher"]` — a bracket lookup, not a dotted identifier, since the filename starts with a digit. The chat widget include is deliberately **not** added here — `_includes/chat-widget.html` doesn't exist until Task 12, and adding the `{% include %}` tag before that file exists would break every `bundle exec jekyll build` between now and then (Task 6's own Step 3, and Task 7's Step 2). Task 12 appends that include line to this file once the include exists.
 
 - [ ] **Step 2: Write `modules/01-dnn-refresher/reading.md`**
 
@@ -1534,6 +1530,7 @@ git commit -m "Add Cloudflare Worker chat proxy handler"
 - Create: `_includes/chat-widget.html`
 - Create: `assets/js/chat-widget.js`
 - Modify: `_config.yml` (add a `chat_worker_url` site variable)
+- Modify: `modules/01-dnn-refresher/index.md` (add the chat widget include)
 
 **Interfaces:**
 - Produces: `buildChatRequest(moduleSlug, history, newUserText) -> {module, messages}` and `parseChatResponse(json) -> string` (throws if `json.error` is set). Consumed by `assets/js/chat-widget.js`.
@@ -1681,7 +1678,13 @@ init();
 
 - [ ] **Step 8: Wire the include into Module 1's page**
 
-This was already added as a placeholder line in Task 6 Step 1 (`{% include chat-widget.html slug=page.slug title=page.title %}`) — no further edit needed there. Verify it renders:
+Modify `modules/01-dnn-refresher/index.md` (created in Task 6): add a blank line followed by this include immediately after the existing `{% include quiz.html ... %}` line:
+
+```liquid
+{% include chat-widget.html slug=page.slug title=page.title %}
+```
+
+Verify it renders:
 
 Run: `bundle exec jekyll build`
 Expected: no errors; `_site/modules/01-dnn-refresher/index.html` contains `id="chat-widget-root"`.
@@ -1689,7 +1692,7 @@ Expected: no errors; `_site/modules/01-dnn-refresher/index.html` contains `id="c
 - [ ] **Step 9: Commit**
 
 ```bash
-git add assets/js/chat-client.mjs test/chat-client.test.mjs _includes/chat-widget.html assets/js/chat-widget.js _config.yml
+git add assets/js/chat-client.mjs test/chat-client.test.mjs _includes/chat-widget.html assets/js/chat-widget.js _config.yml modules/01-dnn-refresher/index.md
 git commit -m "Add chat widget frontend and wire it into Module 1"
 ```
 
