@@ -560,10 +560,10 @@ See [Module 1 Reading List](reading.html) for required and optional papers, plus
 
 Part A: implement a 2-layer MLP for MNIST using raw tensor ops only — forward pass, manual backward pass, plain SGD, no `.backward()` — and verify against autograd. Part B: reimplement with autograd, train with SGD / SGD+momentum / Adam / AdamW vs. Adam+L2, and plot the AdamW/Adam+L2 divergence. Part C: add Dropout + BatchNorm and demonstrate train vs. eval-mode behavior.
 
-{% include quiz.html slug=page.slug quiz=site.data.quizzes["01_dnn_refresher"] %}
+{% include quiz.html slug=page.slug quiz=site.data.quizzes.01_dnn_refresher %}
 ```
 
-Note: Jekyll turns `_data/quizzes/01_dnn_refresher.yml` (created in Task 7) into `site.data.quizzes["01_dnn_refresher"]` — a bracket lookup, not a dotted identifier, since the filename starts with a digit. The chat widget include is deliberately **not** added here — `_includes/chat-widget.html` doesn't exist until Task 12, and adding the `{% include %}` tag before that file exists would break every `bundle exec jekyll build` between now and then (Task 6's own Step 3, and Task 7's Step 2). Task 12 appends that include line to this file once the include exists.
+Note (corrected during Task 6 implementation/review — verified empirically against an isolated Jekyll/Liquid fixture using this project's pinned gem versions): use **dot notation** (`site.data.quizzes.01_dnn_refresher`), not bracket/subscript notation. Bracket notation (`site.data.quizzes["01_dnn_refresher"]`) is a hard build failure inside a `{% include %}` tag's parameter list — Jekyll's include-tag parser validates parameters against a restrictive bareword regex that rejects `[`, `]`, and `"`, raising `Invalid syntax for include tag` at template-parse time regardless of whether the underlying data file exists. Liquid's dot-notation variable lookup, by contrast, splits on `.` with a generic tokenizer that is not identifier-strict, so it resolves a digit-leading segment like `01_dnn_refresher` correctly. The chat widget include is deliberately **not** added here — `_includes/chat-widget.html` doesn't exist until Task 12, and adding the `{% include %}` tag before that file exists would break every `bundle exec jekyll build` between now and then (Task 6's own Step 3, and Task 7's Step 2). Task 12 appends that include line to this file once the include exists.
 
 - [ ] **Step 2: Write `modules/01-dnn-refresher/reading.md`**
 
@@ -619,7 +619,7 @@ git commit -m "Add Module 1 content and reading list pages"
 
 **Interfaces:**
 - Consumes: the question schema from Task 4/5.
-- Produces: `site.data.quizzes.01_dnn_refresher` (referenced from `modules/01-dnn-refresher/index.md` as `site.data.quizzes_01_dnn_refresher` — note: Jekyll nests `_data/quizzes/01_dnn_refresher.yml` under `site.data.quizzes["01_dnn_refresher"]`; fix the include reference in this task's Step 2 to use the correct path).
+- Produces: `site.data.quizzes.01_dnn_refresher`, already correctly referenced via dot notation in `modules/01-dnn-refresher/index.md` (Task 6) — no further edit needed there once this file exists.
 
 - [ ] **Step 1: Write the quiz data file**
 
