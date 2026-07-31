@@ -1,0 +1,9 @@
+<!-- _includes/chat-widget.html -->
+<section id="chat-widget-root" data-module="{{ include.slug }}" data-title="{{ include.title }}" data-worker-url="{{ site.chat_worker_url }}">
+  <h2>Ask a question about this module</h2>
+  <div id="chat-log"></div>
+  <input type="text" id="chat-input" placeholder="Ask Claude about this module...">
+  <button id="chat-send">Send</button>
+  <p id="chat-status"></p>
+</section>
+<script type="module" src="{{ '/assets/js/chat-widget.js' | relative_url }}"></script>

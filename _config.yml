@@ -33,3 +33,5 @@ callouts:
   exercise:
     title: Coding Exercise
     color: green
+
+chat_worker_url: "https://llm-course-chat.YOUR-SUBDOMAIN.workers.dev"

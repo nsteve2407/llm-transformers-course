@@ -36,3 +36,5 @@ See [Module 1 Reading List](reading.html) for required and optional papers, plus
 Part A: implement a 2-layer MLP for MNIST using raw tensor ops only — forward pass, manual backward pass, plain SGD, no `.backward()` — and verify against autograd. Part B: reimplement with autograd, train with SGD / SGD+momentum / Adam / AdamW vs. Adam+L2, and plot the AdamW/Adam+L2 divergence. Part C: add Dropout + BatchNorm and demonstrate train vs. eval-mode behavior.
 
 {% include quiz.html slug=page.slug quiz=site.data.quizzes.01_dnn_refresher %}
+
+{% include chat-widget.html slug=page.slug title=page.title %}
