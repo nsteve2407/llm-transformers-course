@@ -1,0 +1,35 @@
+title: LLM & Transformers Course
+description: >-
+  A comprehensive, self-paced course covering DNN/CNN/RNN foundations
+  through modern text and vision Transformers, with reading lists,
+  PyTorch coding exercises, and quizzes.
+theme: just-the-docs
+url: "https://nsteve2407.github.io"
+baseurl: "/llm-transformers-course"
+
+plugins:
+  - jekyll-sitemap
+
+nav_external_links:
+  - title: GitHub Repo
+    url: https://github.com/nsteve2407/llm-transformers-course
+
+search_enabled: true
+heading_anchors: true
+
+aux_links:
+  "View on GitHub":
+    - "https://github.com/nsteve2407/llm-transformers-course"
+
+back_to_top: true
+back_to_top_text: "Back to top"
+
+footer_content: "LLM & Transformers Course"
+
+callouts:
+  note:
+    title: Note
+    color: blue
+  exercise:
+    title: Coding Exercise
+    color: green

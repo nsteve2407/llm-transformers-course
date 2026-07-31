@@ -1,0 +1,14 @@
+_site/
+.jekyll-cache/
+.jekyll-metadata
+.bundle/
+vendor/
+Gemfile.lock.bak
+
+node_modules/
+worker/node_modules/
+worker/dist/
+worker/src/context/*.json
+!worker/src/context/.gitkeep
+
+.DS_Store
