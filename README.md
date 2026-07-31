@@ -1,0 +1,44 @@
+# LLM & Transformers Course
+
+A comprehensive, self-paced course covering DNN/CNN/RNN foundations through
+modern text and vision Transformers — published as a GitHub Pages site at
+<https://nsteve2407.github.io/llm-transformers-course/>.
+
+## Repo layout
+
+- `modules/<slug>/` — per-module content, reading list, quiz data
+- `notebooks/<slug>/` — paired starter/solution PyTorch notebooks, Colab-runnable
+- `worker/` — Cloudflare Worker that proxies the in-page "ask a question" chat widget to the Anthropic API
+- `_includes/`, `assets/js/` — Jekyll includes and the quiz/chat client-side JS
+
+## Local development
+
+```bash
+bundle install
+bundle exec jekyll serve
+```
+
+Then open <http://127.0.0.1:4000/llm-transformers-course/>.
+
+Run JS unit tests: `node --test test/*.test.mjs`
+Run Worker unit tests: `cd worker && npm install && npm test`
+
+## One-time setup for the chat widget
+
+The chat widget needs a Cloudflare Worker (holding your Anthropic API key
+as a secret) deployed once:
+
+1. Create a free Cloudflare account at <https://dash.cloudflare.com> if you don't have one.
+2. `npm install -g wrangler` then `wrangler login`.
+3. Create a KV namespace for rate limiting: `cd worker && wrangler kv namespace create RATE_LIMIT_KV`, then paste the returned `id` into `worker/wrangler.toml`.
+4. Generate an API key at <https://console.anthropic.com>, then from `worker/`: `wrangler secret put ANTHROPIC_API_KEY` and paste it in when prompted.
+5. Regenerate context and deploy: `node ../scripts/build_chat_context.mjs && npx wrangler deploy` (run from `worker/`). Note the `*.workers.dev` URL it prints.
+6. Set that URL as `chat_worker_url` in `_config.yml`, commit, and push.
+7. For automatic redeploys on `worker/` changes: create a scoped Cloudflare API token with Workers deploy permission, add it as the GitHub Actions repo secret `CLOUDFLARE_API_TOKEN`, then trigger `.github/workflows/worker-deploy.yml` manually (`gh workflow run worker-deploy.yml`) or add a `push` trigger for `worker/**`.
+
+## Course content status
+
+Module 1 (DNN Refresher) is fully built out as the reference implementation.
+Modules 2–13 follow the same structure (content + reading.md + quiz.yml +
+notebook pair) and are tracked in follow-up implementation plans under
+`docs/superpowers/plans/`.
