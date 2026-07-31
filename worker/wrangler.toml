@@ -1,0 +1,13 @@
+name = "llm-course-chat"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+
+[vars]
+ALLOWED_ORIGIN = "https://nsteve2407.github.io"
+RATE_LIMIT_PER_HOUR = "20"
+
+# Create with: wrangler kv namespace create RATE_LIMIT_KV
+# then paste the returned id below.
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
