@@ -1,0 +1,9 @@
+<!-- _includes/quiz.html -->
+<section id="quiz-root" data-module="{{ include.slug }}">
+  <h2>Check your understanding</h2>
+  <script type="application/json" id="quiz-data">
+    {{ include.quiz | jsonify }}
+  </script>
+  <div id="quiz-app"></div>
+</section>
+<script type="module" src="{{ '/assets/js/quiz.js' | relative_url }}"></script>
