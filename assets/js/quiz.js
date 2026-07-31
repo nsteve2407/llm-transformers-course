@@ -4,13 +4,24 @@ import { scoreQuiz } from "./quiz-logic.mjs";
 function renderQuestion(question, index, moduleSlug) {
   const wrapper = document.createElement("div");
   wrapper.className = "quiz-question";
-  wrapper.innerHTML = `<p><strong>Q${index + 1}.</strong> ${question.question}</p>`;
+
+  const questionPara = document.createElement("p");
+  const questionLabel = document.createElement("strong");
+  questionLabel.textContent = `Q${index + 1}.`;
+  questionPara.appendChild(questionLabel);
+  questionPara.appendChild(document.createTextNode(` ${question.question}`));
+  wrapper.appendChild(questionPara);
 
   if (question.type === "mcq") {
     question.choices.forEach((choice, choiceIndex) => {
       const label = document.createElement("label");
       label.style.display = "block";
-      label.innerHTML = `<input type="radio" name="q-${moduleSlug}-${index}" value="${choiceIndex}"> ${choice}`;
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = `q-${moduleSlug}-${index}`;
+      input.value = choiceIndex;
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(` ${choice}`));
       wrapper.appendChild(label);
     });
   } else {
@@ -70,7 +81,7 @@ function initQuiz(container) {
 }
 
 function init() {
-  document.querySelectorAll('[data-module]').forEach(initQuiz);
+  document.querySelectorAll(".quiz-widget").forEach(initQuiz);
 }
 
 init();
