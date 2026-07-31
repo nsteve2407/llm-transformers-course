@@ -29,20 +29,21 @@ function renderQuestion(question, index) {
   return wrapper;
 }
 
-function collectResponse(question, index) {
+function collectResponse(container, question, index) {
   if (question.type === "mcq") {
-    const checked = document.querySelector(`input[name="q${index}"]:checked`);
+    const checked = container.querySelector(`input[name="q${index}"]:checked`);
     return checked ? Number(checked.value) : null;
   }
-  const input = document.querySelector(`input[name="q${index}"]`);
+  const input = container.querySelector(`input[name="q${index}"]`);
   return input ? input.value : "";
 }
 
-function init() {
-  const dataEl = document.getElementById("quiz-data");
+function initQuiz(container) {
+  const dataEl = container.querySelector("script[type='application/json']");
   if (!dataEl) return;
   const questions = JSON.parse(dataEl.textContent);
-  const app = document.getElementById("quiz-app");
+  const moduleSlug = container.dataset.module;
+  const app = container.querySelector(`#quiz-app-${moduleSlug}`);
 
   questions.forEach((q, i) => app.appendChild(renderQuestion(q, i)));
 
@@ -54,17 +55,21 @@ function init() {
   app.appendChild(scoreEl);
 
   submitBtn.addEventListener("click", () => {
-    const responses = questions.map((q, i) => collectResponse(q, i));
+    const responses = questions.map((q, i) => collectResponse(container, q, i));
     const { correctCount, total, results } = scoreQuiz(questions, responses);
     scoreEl.textContent = `Score: ${correctCount} / ${total}`;
     results.forEach((r, i) => {
-      const feedback = document.querySelector(`.quiz-feedback[data-index="${i}"]`);
+      const feedback = container.querySelector(`.quiz-feedback[data-index="${i}"]`);
       feedback.textContent = r.correct
         ? "Correct."
         : `Incorrect. ${r.explanation}`;
       feedback.style.color = r.correct ? "green" : "crimson";
     });
   });
+}
+
+function init() {
+  document.querySelectorAll('[data-module]').forEach(initQuiz);
 }
 
 init();
