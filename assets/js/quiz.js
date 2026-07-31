@@ -1,7 +1,7 @@
 // assets/js/quiz.js
 import { scoreQuiz } from "./quiz-logic.mjs";
 
-function renderQuestion(question, index) {
+function renderQuestion(question, index, moduleSlug) {
   const wrapper = document.createElement("div");
   wrapper.className = "quiz-question";
   wrapper.innerHTML = `<p><strong>Q${index + 1}.</strong> ${question.question}</p>`;
@@ -10,13 +10,13 @@ function renderQuestion(question, index) {
     question.choices.forEach((choice, choiceIndex) => {
       const label = document.createElement("label");
       label.style.display = "block";
-      label.innerHTML = `<input type="radio" name="q${index}" value="${choiceIndex}"> ${choice}`;
+      label.innerHTML = `<input type="radio" name="q-${moduleSlug}-${index}" value="${choiceIndex}"> ${choice}`;
       wrapper.appendChild(label);
     });
   } else {
     const input = document.createElement("input");
     input.type = "text";
-    input.name = `q${index}`;
+    input.name = `q-${moduleSlug}-${index}`;
     input.placeholder = "Your answer";
     wrapper.appendChild(input);
   }
@@ -30,11 +30,12 @@ function renderQuestion(question, index) {
 }
 
 function collectResponse(container, question, index) {
+  const moduleSlug = container.dataset.module;
   if (question.type === "mcq") {
-    const checked = container.querySelector(`input[name="q${index}"]:checked`);
+    const checked = container.querySelector(`input[name="q-${moduleSlug}-${index}"]:checked`);
     return checked ? Number(checked.value) : null;
   }
-  const input = container.querySelector(`input[name="q${index}"]`);
+  const input = container.querySelector(`input[name="q-${moduleSlug}-${index}"]`);
   return input ? input.value : "";
 }
 
@@ -45,7 +46,7 @@ function initQuiz(container) {
   const moduleSlug = container.dataset.module;
   const app = container.querySelector(`#quiz-app-${moduleSlug}`);
 
-  questions.forEach((q, i) => app.appendChild(renderQuestion(q, i)));
+  questions.forEach((q, i) => app.appendChild(renderQuestion(q, i, moduleSlug)));
 
   const submitBtn = document.createElement("button");
   submitBtn.textContent = "Submit answers";
