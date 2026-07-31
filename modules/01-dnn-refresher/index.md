@@ -3,7 +3,7 @@ title: "1. DNN Refresher"
 parent: Modules
 nav_order: 1
 slug: 01-dnn-refresher
-has_children: false
+has_children: true
 ---
 
 # Module 1: DNN Refresher
