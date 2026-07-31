@@ -9,6 +9,7 @@ on:
       - "Gemfile.lock"
       - "index.md"
       - "modules/**"
+      - "_data/**"
       - "_includes/**"
       - "assets/**"
       - ".github/workflows/pages.yml"

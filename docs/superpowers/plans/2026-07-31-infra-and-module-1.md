@@ -29,7 +29,8 @@ llm-transformers-course/
   assets/js/quiz-logic.mjs, assets/js/quiz.js
   assets/js/chat-client.mjs, assets/js/chat-widget.js
   test/quiz-logic.test.mjs, test/chat-client.test.mjs
-  modules/01-dnn-refresher/index.md, reading.md, quiz.yml
+  modules/01-dnn-refresher/index.md, reading.md
+  _data/quizzes/01_dnn_refresher.yml
   notebooks/01-dnn-refresher/exercise_starter.ipynb, exercise_solution.ipynb
   scripts/build_chat_context.mjs
   worker/package.json, tsconfig.json, vitest.config.ts, wrangler.toml

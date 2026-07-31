@@ -10,5 +10,6 @@ worker/node_modules/
 worker/dist/
 worker/src/context/*.json
 !worker/src/context/.gitkeep
+worker/.dev.vars
 
 .DS_Store

@@ -6,10 +6,21 @@ modern text and vision Transformers — published as a GitHub Pages site at
 
 ## Repo layout
 
-- `modules/<slug>/` — per-module content, reading list, quiz data
+- `modules/<slug>/` — per-module content and reading list
+- `_data/quizzes/<slug_with_underscores>.yml` — per-module quiz data
 - `notebooks/<slug>/` — paired starter/solution PyTorch notebooks, Colab-runnable
 - `worker/` — Cloudflare Worker that proxies the in-page "ask a question" chat widget to the Anthropic API
 - `_includes/`, `assets/js/` — Jekyll includes and the quiz/chat client-side JS
+
+## Quiz data convention
+
+Quiz data files use an **underscored** slug (e.g. `01_dnn_refresher.yml`),
+not the **hyphenated** module directory name (`modules/01-dnn-refresher/`).
+This is required because Jekyll data files are exposed to Liquid as
+`site.data.quizzes.<key>`, and hyphens aren't valid in Liquid's dot-notation
+property lookup. When adding a new module, make sure the quiz file under
+`_data/quizzes/` uses underscores even though the module directory under
+`modules/` uses hyphens.
 
 ## Local development
 
