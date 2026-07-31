@@ -1,6 +1,7 @@
 // worker/src/index.ts
 import modulesContext from "./context/modules.json";
 import { decideRateLimit, type RateLimitRecord } from "./rate-limit";
+import { trimHistory } from "./history";
 
 interface Env {
   ANTHROPIC_API_KEY: string;
@@ -9,7 +10,7 @@ interface Env {
   RATE_LIMIT_KV: KVNamespace;
 }
 
-interface ChatMessage {
+export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
@@ -21,8 +22,9 @@ interface ChatRequestBody {
 
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 1024;
-const MAX_HISTORY_TURNS = 6;
+const MAX_HISTORY_MESSAGES = 6;
 const RATE_LIMIT_WINDOW_SECONDS = 3600;
+const MAX_TOTAL_CONTENT_CHARS = 20000;
 
 function corsHeaders(origin: string): HeadersInit {
   return {
@@ -59,6 +61,35 @@ function buildSystemPrompt(moduleSlug: string): string | null {
   return `You are a course assistant embedded in the "${entry.title}" module of an LLM & Transformers course. Answer the learner's question using the module content below as primary context, but you may also draw on your general knowledge to explain related concepts. Keep answers focused and concise.\n\n---\n${entry.content}\n---`;
 }
 
+function validateChatRequestBody(body: unknown, maxTotalChars: number): string | null {
+  if (typeof body !== "object" || body === null) {
+    return "Request body must be an object.";
+  }
+  const { module, messages } = body as Partial<ChatRequestBody>;
+  if (typeof module !== "string" || module.length === 0) {
+    return "`module` must be a non-empty string.";
+  }
+  if (!Array.isArray(messages)) {
+    return "`messages` must be an array.";
+  }
+  let totalChars = 0;
+  for (const message of messages) {
+    if (
+      typeof message !== "object" ||
+      message === null ||
+      (message.role !== "user" && message.role !== "assistant") ||
+      typeof message.content !== "string"
+    ) {
+      return "Each message must have role 'user' or 'assistant' and string content.";
+    }
+    totalChars += message.content.length;
+  }
+  if (totalChars > maxTotalChars) {
+    return "Total message content exceeds the maximum allowed size.";
+  }
+  return null;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = env.ALLOWED_ORIGIN;
@@ -71,11 +102,21 @@ export default {
       return jsonResponse({ error: "Method not allowed" }, 405, origin);
     }
 
+    const requestOrigin = request.headers.get("Origin");
+    if (requestOrigin !== origin) {
+      return jsonResponse({ error: "Origin not allowed." }, 403, origin);
+    }
+
     let body: ChatRequestBody;
     try {
       body = await request.json();
     } catch {
       return jsonResponse({ error: "Invalid JSON body" }, 400, origin);
+    }
+
+    const validationError = validateChatRequestBody(body, MAX_TOTAL_CONTENT_CHARS);
+    if (validationError) {
+      return jsonResponse({ error: validationError }, 400, origin);
     }
 
     const systemPrompt = buildSystemPrompt(body.module);
@@ -89,7 +130,7 @@ export default {
       return jsonResponse({ error: "Rate limit exceeded, try again later." }, 429, origin);
     }
 
-    const trimmedHistory = (body.messages ?? []).slice(-MAX_HISTORY_TURNS);
+    const trimmedHistory = trimHistory(body.messages ?? [], MAX_HISTORY_MESSAGES);
 
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
