@@ -1,0 +1,100 @@
+# _data/quizzes/01_dnn_refresher.yml
+- type: mcq
+  question: "In backprop, why do we prefer reverse-mode over forward-mode autodiff for training a neural network?"
+  choices:
+    - "Forward mode doesn't support nonlinear activations"
+    - "Reverse mode is efficient when there are many parameters and a single scalar loss output"
+    - "Reverse mode uses less memory in all cases"
+    - "Forward mode can't compute exact gradients"
+  answer_index: 1
+  explanation: "Reverse mode computes all parameter gradients in one backward pass, which is efficient exactly when outputs (loss) are few and inputs (parameters) are many — the opposite of forward mode's sweet spot."
+
+- type: mcq
+  question: "Why does AdamW's decoupled weight decay behave differently from adding an L2 penalty directly to the loss under Adam?"
+  choices:
+    - "They are mathematically identical, AdamW is just a naming convention"
+    - "L2's gradient contribution gets rescaled by Adam's adaptive per-parameter learning rate, while true weight decay does not"
+    - "AdamW only works with convolutional layers"
+    - "L2 regularization is always stronger than weight decay"
+  answer_index: 1
+  explanation: "Under Adam, an L2 penalty added to the loss gets divided by each parameter's adaptive step size, so parameters with large gradient history are decayed less. AdamW instead subtracts a decay term directly from the weights, independent of the adaptive scaling."
+
+- type: mcq
+  question: "What does He initialization account for that Xavier/Glorot initialization does not?"
+  choices:
+    - "The use of batch normalization"
+    - "ReLU zeroing out roughly half of its inputs, requiring a larger variance to compensate"
+    - "The number of training epochs"
+    - "The choice of optimizer"
+  answer_index: 1
+  explanation: "Xavier initialization assumes symmetric activations like tanh. ReLU zeros out negative inputs, halving the effective variance, so He initialization scales the variance up to compensate."
+
+- type: short
+  question: "What numerical trick keeps softmax + cross-entropy stable when logits are very large or very negative?"
+  answer_keywords:
+    - "log-sum-exp"
+    - "logsumexp"
+    - "subtract the max"
+    - "max logit"
+  model_answer: "The log-sum-exp trick: subtract the maximum logit before exponentiating, which avoids overflow while leaving the softmax output mathematically unchanged."
+  explanation: "Subtracting the max logit (or using a fused log-sum-exp implementation) prevents exp() from overflowing while producing an identical result, since softmax is invariant to a constant shift in the logits."
+
+- type: mcq
+  question: "What does 'inverted dropout' scale, and when?"
+  choices:
+    - "It scales the loss by the dropout rate at test time"
+    - "It scales surviving activations by 1/keep_prob at train time, so no scaling is needed at inference"
+    - "It scales the learning rate during training"
+    - "It scales the weights only during the first epoch"
+  answer_index: 1
+  explanation: "Inverted dropout divides the kept activations by keep_prob during training, so the expected activation magnitude matches inference time exactly, and no rescaling is needed when dropout is turned off for evaluation."
+
+- type: mcq
+  question: "During training, what statistics does BatchNorm use to normalize activations, and what does it use at inference time?"
+  choices:
+    - "Always the running average, both at train and inference time"
+    - "The current mini-batch's mean/variance at train time; a running (exponential moving average) mean/variance at inference time"
+    - "A fixed mean of 0 and variance of 1 at all times"
+    - "The mean/variance of the entire training set, recomputed every batch"
+  answer_index: 1
+  explanation: "BatchNorm normalizes using the current mini-batch's statistics during training (which introduces useful noise/regularization) and switches to accumulated running statistics at inference, so a single example can be normalized without needing a batch."
+
+- type: short
+  question: "Why does Nesterov momentum evaluate the gradient at a 'look-ahead' point rather than at the current parameters?"
+  answer_keywords:
+    - "look-ahead"
+    - "look ahead"
+    - "future position"
+    - "anticipat"
+  model_answer: "It evaluates the gradient at the position the momentum term is already about to move to, giving a correction based on where the update is heading rather than where it currently is — this typically converges faster and dampens oscillation."
+  explanation: "Nesterov momentum computes the gradient after applying the momentum step (the 'look-ahead' point), giving an anticipatory correction that classical (heavy-ball) momentum, which evaluates the gradient at the current point, doesn't have."
+
+- type: mcq
+  question: "Why is warmup particularly important for adaptive optimizers like Adam early in training?"
+  choices:
+    - "Warmup is only relevant for plain SGD"
+    - "Adam's second-moment estimate is noisy/uninitialized early on, and large steps at that point can be unstable"
+    - "Warmup prevents overfitting at the end of training"
+    - "Warmup is required to enable dropout"
+  answer_index: 1
+  explanation: "Early in training, Adam's moving-average estimates of the gradient's second moment are based on very few samples and can be unreliable, producing overly large effective steps; warmup ramps the learning rate up gradually to avoid this instability."
+
+- type: short
+  question: "What is the core problem that causes vanishing or exploding gradients in very deep networks?"
+  answer_keywords:
+    - "repeated multiplication"
+    - "product of jacobians"
+    - "chain rule"
+    - "depth"
+  model_answer: "Backprop's chain rule multiplies many layers' Jacobians (weight matrices times activation derivatives) together; if their typical magnitude is consistently below 1 the product shrinks toward zero with depth (vanishing), and if consistently above 1 it grows unboundedly (exploding)."
+  explanation: "The gradient at an early layer is a product of many per-layer Jacobians. Depending on whether their eigenvalues are systematically below or above 1, that product shrinks or grows exponentially with network depth."
+
+- type: mcq
+  question: "What does dropout do differently at evaluation time compared to training time (with inverted dropout)?"
+  choices:
+    - "Nothing changes, dropout is still applied identically"
+    - "Dropout is disabled entirely and all units are used, unscaled"
+    - "Dropout rate is doubled"
+    - "Only the last layer uses dropout at eval time"
+  answer_index: 1
+  explanation: "At evaluation time, dropout is simply turned off — every unit is used, with no masking and no additional scaling, because inverted dropout already applied the 1/keep_prob correction during training."
