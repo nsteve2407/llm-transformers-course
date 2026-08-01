@@ -73,7 +73,7 @@ as a secret) deployed once:
 
 ## Course content status
 
-Modules 1–3 (DNN Refresher, CNN Refresher, RNN & LSTM) are fully built out.
-Modules 4–13 follow the same structure (content + reading.md + quiz.yml +
-notebook pair) and are tracked in follow-up implementation plans under
-`docs/superpowers/plans/`.
+Every module currently listed under `modules/` (see the sidebar, or `ls modules/`) is fully built
+out: content page, reading list, quiz data, and a starter/solution notebook pair. Additional modules
+are added incrementally, each following that same structure, via follow-up implementation plans
+tracked under `docs/superpowers/plans/`.
