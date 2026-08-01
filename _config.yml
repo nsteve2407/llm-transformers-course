@@ -10,6 +10,12 @@ baseurl: "/llm-transformers-course"
 plugins:
   - jekyll-sitemap
 
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+
 nav_external_links:
   - title: GitHub Repo
     url: https://github.com/nsteve2407/llm-transformers-course
