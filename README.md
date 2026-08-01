@@ -79,7 +79,8 @@ as a secret) deployed once:
 
 ## Course content status
 
-Every module currently listed under `modules/` (see the sidebar, or `ls modules/`) is fully built
-out: content page, reading list, quiz data, and a starter/solution notebook pair. Additional modules
-are added incrementally, each following that same structure, via follow-up implementation plans
-tracked under `docs/superpowers/plans/`.
+All 13 modules are complete. Modules 1-12 each have: content page, reading list, quiz data, and a
+starter/solution notebook pair. Module 13 (Capstone) is project-based per the course design — it has
+a content page, a "where to go next" pointer page, quiz data, and a project brief (three open-ended
+project options plus alternatives) instead of a starter/solution notebook pair, since the work is a
+self-directed 1-2 week project rather than a fill-in-the-stub exercise.
