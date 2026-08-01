@@ -2,20 +2,20 @@
 - type: mcq
   question: "In BPTT, the gradient ∂L_T/∂h_t depends on a product of Jacobians ∂h_k/∂h_{k-1} for k from t+1 to T. Why does this specific product structure — rather than depth alone — make vanishing/exploding gradients especially severe in vanilla RNNs?"
   choices:
-    - "Because each Jacobian involves the same recurrent weight matrix W_hh reused at every step, so its eigenvalues are effectively raised to a power equal to the number of time steps between t and T"
-    - "Because RNNs use more parameters per layer than CNNs, so the gradient has more terms to sum"
-    - "Because the loss function used for sequence models is inherently non-convex"
-    - "Because softmax outputs at each time step are bounded between 0 and 1, which caps the gradient magnitude"
+    - "Because each Jacobian involves the same recurrent weight matrix W_hh reused at every step, so its eigenvalues are raised to a power equal to the step gap"
+    - "Because RNNs use more parameters per layer than CNNs, so the gradient has substantially more individual terms to sum at each time step"
+    - "Because the loss function used for sequence models is inherently non-convex, which on its own is enough to cause vanishing gradients"
+    - "Because softmax outputs at each time step are bounded between 0 and 1, which by itself caps the gradient magnitude regardless of depth, architecture, or how the recurrent weights are initialized"
   answer_index: 0
   explanation: "In a deep feedforward net, each layer has its own independent weight matrix, so the product of Jacobians mixes many different matrices. In an RNN unrolled over time, the *same* W_hh (and the same nonlinearity-derivative structure) is reused at every step, so the product of Jacobians behaves like W_hh raised to a power. Whether its dominant eigenvalue is below or above 1 determines whether that power shrinks toward zero or grows without bound, and the number of steps between t and T (the gap being bridged) is exactly the exponent — which is why long-range dependencies are especially fragile."
 
 - type: mcq
   question: "Gradient clipping (e.g. rescaling the global gradient norm down to a threshold) is a standard fix for exploding gradients in RNN training. Why does it do nothing to address vanishing gradients?"
   choices:
-    - "Clipping only rescales a gradient that has already grown too large; if the gradient has instead shrunk toward zero, there is no large value to rescale down, and clipping leaves it near zero"
-    - "Clipping automatically increases the learning rate, which would only worsen vanishing gradients"
-    - "Clipping is applied to the loss value, not to the gradients themselves"
-    - "Clipping removes the recurrent connections that are responsible for vanishing gradients"
+    - "Clipping only rescales an already-too-large gradient; a gradient that has shrunk toward zero has nothing to rescale down, so clipping leaves it near zero"
+    - "Clipping automatically increases the learning rate whenever gradients shrink below some threshold, which would only make vanishing gradients even worse over time"
+    - "Clipping is applied directly to the loss value before backpropagation even begins, not to the gradients that come out of it"
+    - "Clipping removes the recurrent connections that are responsible for vanishing gradients, effectively turning the RNN into a feedforward network"
   answer_index: 0
   explanation: "Clipping caps a gradient's norm from above once it exceeds a threshold, which prevents the instability and divergence caused by exploding gradients. It has no mechanism to amplify a gradient that has already decayed toward zero — a vanishing gradient carries almost no signal to begin with, and there is nothing for clipping to act on. Vanishing gradients need a structural fix (e.g. LSTM's additive cell update, better initialization, or skip connections), not a magnitude cap."
 
@@ -44,39 +44,39 @@
   question: "Which of the following correctly describes a structural difference between GRU and LSTM?"
   choices:
     - "GRU merges the cell state and hidden state into a single state vector and uses two gates (reset, update) instead of LSTM's three (forget, input, output)"
-    - "GRU has more parameters than LSTM because it adds an extra gate for long-term memory"
-    - "GRU cannot be used for sequence modeling, only for classification tasks"
-    - "LSTM has no gating mechanism, while GRU introduces gating for the first time"
+    - "GRU has more parameters than LSTM because it adds an extra gate specifically dedicated to long-term memory retention"
+    - "GRU cannot be used for sequence modeling at all, and was designed purely for fixed-length classification tasks instead"
+    - "LSTM has no gating mechanism whatsoever, while GRU introduces the very first gating mechanism ever used in any recurrent network architecture"
   answer_index: 0
   explanation: "GRU collapses LSTM's separate cell-state/hidden-state distinction into a single state, and replaces LSTM's three gates with two (reset and update) that jointly control how much of the old state to keep and how the candidate state is computed. Fewer gates and one state instead of two means fewer parameters, which is why GRUs are often preferred when data or compute is limited or training speed matters, while LSTM's extra gate and separate cell state can give it a bit more expressive control on tasks that need very long-range memory."
 
 - type: mcq
   question: "Bidirectional RNNs run one RNN left-to-right and another right-to-left over a sequence, concatenating their hidden states at each position. Why can't this architecture be used directly for autoregressive text generation?"
   choices:
-    - "Bidirectional RNNs are too computationally slow to ever run at inference time"
-    - "The backward-direction RNN needs to see the entire future of the sequence before it can compute a hidden state at position t, but at generation time the tokens after t don't exist yet"
-    - "Bidirectional RNNs cannot compute gradients during backpropagation"
-    - "Bidirectional RNNs only support fixed-length sequences, and generated text has variable length"
+    - "Bidirectional RNNs are too computationally slow to ever be run at inference time, regardless of sequence length or hardware"
+    - "The backward-direction RNN needs the entire future of the sequence to compute a hidden state at position t, but at generation time those future tokens don't exist yet"
+    - "Bidirectional RNNs cannot compute gradients during backpropagation, since the backward pass conflicts with the backward-direction RNN"
+    - "Bidirectional RNNs only support fixed-length sequences, and generated text has a variable length that grows one token at a time"
   answer_index: 1
   explanation: "The entire benefit of a bidirectional RNN is that its representation at position t is conditioned on the full sequence, both past and future — which requires the future tokens to already exist. Autoregressive generation produces tokens one at a time, left to right, so there is no 'future' to feed the backward-direction RNN. Bidirectional RNNs are used for encoding a fully known input (e.g. the encoder in seq2seq, or tagging/classification), not for generating output token by token."
 
 - type: mcq
   question: "In a vanilla (no-attention) seq2seq encoder-decoder, the encoder compresses the entire input sequence into a single fixed-length context vector, which the decoder uses to generate every output token. What problem does this cause, especially for long input sequences?"
   choices:
-    - "The decoder becomes unable to produce variable-length outputs"
+    - "The decoder becomes permanently unable to produce variable-length outputs once the encoder has compressed the input into one vector"
     - "The fixed-length vector must summarize an arbitrarily long input, so information gets diluted or lost as sequence length grows, degrading performance on long sequences"
-    - "The encoder's gradients vanish immediately regardless of sequence length"
-    - "The fixed-length vector causes the decoder to ignore the input entirely and rely only on its own previous outputs"
+    - "The encoder's gradients vanish immediately regardless of sequence length, purely because a fixed-length vector is used at all"
+    - "The fixed-length vector causes the decoder to ignore the input entirely and rely only on its own previous outputs, no matter how it was trained"
   answer_index: 1
   explanation: "Squeezing an entire source sequence's information into one fixed-size vector is a hard compression problem. For short sequences it can work reasonably well, but as sequence length grows, that single vector becomes an information bottleneck — it cannot retain enough detail about every input token, so decoding quality degrades, especially for later output tokens or long inputs. This bottleneck is exactly the motivation for attention, which lets the decoder look back at all encoder hidden states directly instead of relying on one summary vector."
 
 - type: mcq
   question: "What is the key computational difference between Bahdanau (additive) attention and Luong (multiplicative/dot-product) attention when scoring how well a decoder state aligns with each encoder hidden state?"
   choices:
-    - "Bahdanau attention scores alignment with a small feedforward network (concatenating the two states and passing them through a learned weight vector), while Luong attention scores alignment with a dot product (or bilinear form) between the decoder and encoder states"
-    - "Bahdanau attention only works with LSTMs, while Luong attention only works with GRUs"
-    - "Luong attention requires no learned parameters at all, while Bahdanau attention requires the entire encoder to be retrained from scratch"
-    - "Bahdanau attention computes context vectors only after decoding finishes, while Luong attention computes them before decoding starts"
+    - "Bahdanau attention scores alignment with a small feedforward network, while Luong attention scores alignment with a dot product or bilinear form"
+    - "Bahdanau attention only works with LSTMs and cannot be paired with any other recurrent cell, while Luong attention only works with GRUs and never with LSTMs"
+    - "Luong attention requires no learned parameters at all, while Bahdanau attention requires the entire encoder to be retrained from scratch every time"
+    - "Bahdanau attention computes context vectors only after decoding finishes entirely, while Luong attention computes all of them before decoding ever starts"
   answer_index: 0
   explanation: "Bahdanau's alignment score is computed by concatenating the decoder state and each encoder state and passing them through a small feedforward layer (an 'additive' score: v^T tanh(W1 h_dec + W2 h_enc)). Luong's alignment score is instead a direct dot product or bilinear product between the two vectors (h_dec^T h_enc, or h_dec^T W h_enc), which is cheaper to compute. Both still normalize the resulting scores with softmax and take a weighted sum of encoder states to form the context vector — the difference is in how the raw alignment score itself is computed."
 

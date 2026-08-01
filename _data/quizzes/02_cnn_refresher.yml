@@ -22,10 +22,10 @@
 - type: mcq
   question: "In a ResNet bottleneck block (1x1 conv -> 3x3 conv -> 1x1 conv), what is the role of the first 1x1 convolution?"
   choices:
-    - "It enlarges the spatial resolution before the expensive 3x3 convolution"
+    - "It enlarges the spatial resolution before the expensive 3x3 convolution, undoing any downsampling done earlier in the network"
     - "It acts as a per-pixel linear projection that reduces the number of channels, making the following 3x3 convolution cheaper"
-    - "It replaces the need for any nonlinearity in the block"
-    - "It pools over a 1x1 neighborhood to remove noise"
+    - "It replaces the need for any nonlinearity in the block, since a 1x1 convolution already behaves like a learned activation function"
+    - "It pools over a 1x1 neighborhood to remove noise, averaging each pixel together with its own single value before the 3x3 convolution"
   answer_index: 1
   explanation: "A 1x1 convolution has no spatial extent, so at each pixel it is just a linear projection across channels. Placed before the 3x3 conv, it squeezes the channel depth down (e.g. 256 -> 64), so the FLOP-heavy 3x3 conv operates on far fewer channels; a second 1x1 conv after the 3x3 then projects the channel count back up before the block's output is added to its input."
 
@@ -41,10 +41,10 @@
 - type: mcq
   question: "Why do two stacked 3x3 convolutional layers (same number of channels throughout) typically outperform a single 5x5 convolutional layer, even though both give the same 5x5 receptive field?"
   choices:
-    - "The two-layer stack has fewer parameters (18C² vs 25C² for C channels) and inserts an extra nonlinearity between the two convs, increasing representational capacity for the same receptive field"
-    - "The two-layer stack has more parameters, which is why it works better"
-    - "5x5 convolutions cannot be implemented efficiently on GPUs"
-    - "Two 3x3 convs produce a larger receptive field than one 5x5 conv"
+    - "The two-layer stack has fewer parameters than one 5x5 conv and inserts an extra nonlinearity between the two convolutions, increasing representational capacity"
+    - "The two-layer stack has more parameters than a single 5x5 convolution, and that extra capacity alone is why it tends to work better"
+    - "5x5 convolutions cannot be implemented efficiently on GPUs, which is why frameworks silently decompose them into smaller convolutions"
+    - "Two 3x3 convs stacked back to back produce a strictly larger receptive field than a single 5x5 convolution over the same input"
   answer_index: 0
   explanation: "For C input/output channels, one 5x5 conv costs 25C² parameters while two 3x3 convs cost 2×9C² = 18C² — fewer parameters for the same 5x5 receptive field. The two-layer version also inserts an extra ReLU between the convolutions, giving the network one more nonlinear decision boundary to compose, which is strictly more expressive than a single linear-then-nonlinear 5x5 conv."
 
@@ -61,10 +61,10 @@
 - type: mcq
   question: "Which pairing correctly matches an AlexNet innovation with the problem it primarily addressed?"
   choices:
-    - "ReLU addressed overfitting, dropout addressed slow convergence, and local response normalization (LRN) was the main driver of AlexNet's accuracy gain"
-    - "ReLU sped up training by avoiding the saturating gradients of sigmoid/tanh, dropout reduced overfitting in the large fully-connected layers, and LRN provided a mild lateral-inhibition-style regularization with a comparatively small accuracy contribution"
-    - "ReLU reduced the parameter count, dropout increased the receptive field, and LRN replaced pooling entirely"
-    - "ReLU, dropout, and LRN were all primarily introduced to reduce GPU memory usage"
+    - "ReLU addressed overfitting, dropout addressed slow convergence, and local response normalization (LRN) was the main driver of AlexNet's overall accuracy gain over prior architectures"
+    - "ReLU sped up training by avoiding the saturating gradients of sigmoid/tanh, dropout reduced overfitting in the large fully-connected layers, and LRN provided a mild lateral-inhibition-style regularization"
+    - "ReLU reduced the total parameter count of the network by a wide margin, dropout increased the effective receptive field of each convolutional layer, and LRN replaced max pooling entirely throughout the stack"
+    - "ReLU, dropout, and LRN were all primarily introduced to reduce GPU memory usage during training, rather than to address overfitting, saturation, or convergence speed"
   answer_index: 1
   explanation: "ReLU's non-saturating gradient (constant slope for positive inputs) let AlexNet train much faster than sigmoid/tanh networks of similar depth. Dropout was applied in the large fully-connected layers to fight overfitting on a dataset that, by today's standards, was comparatively small relative to the model's capacity. Local response normalization was inspired by biological lateral inhibition, but later analysis — and its removal in VGG and subsequent architectures in favor of batch normalization — showed it contributed comparatively little to accuracy."
 
@@ -81,19 +81,19 @@
 - type: mcq
   question: "Why does the residual formulation y = F(x) + x ease gradient flow compared to a plain stack of nonlinear layers y = F(x)?"
   choices:
-    - "Because the identity shortcut adds a gradient term of exactly 1 (dy/dx includes a direct +1 path), so gradients can flow backward through the shortcut without necessarily being attenuated by F's Jacobian at every layer"
-    - "Because the shortcut removes the need for backpropagation entirely in that block"
-    - "Because F(x) + x always produces smaller-magnitude gradients than F(x) alone, which is desirable"
-    - "Because the addition operation introduces a nonlinearity that stabilizes training"
+    - "Because the identity shortcut adds a gradient term of exactly 1, so gradients can flow backward through the shortcut without necessarily being attenuated by F's Jacobian at every layer"
+    - "Because the shortcut removes the need for backpropagation entirely in that block, letting gradients skip the block without any computation"
+    - "Because F(x) + x always produces smaller-magnitude gradients than F(x) alone, which is desirable for keeping every layer's updates small and stable"
+    - "Because the addition operation introduces a nonlinearity that stabilizes training in a way neither F(x) nor the identity path could achieve alone"
   answer_index: 0
   explanation: "Differentiating y = F(x) + x with respect to x gives dy/dx = dF/dx + I — the identity term contributes a gradient of exactly 1 regardless of what F's Jacobian does. During backprop, this means gradients from a later layer can reach an earlier layer through the shortcut essentially unattenuated, even if F's own Jacobian has small norm at some layers, which is why very deep ResNets remain optimizable where equally deep plain networks degrade."
 
 - type: mcq
   question: "For a convolutional feature map with shape (N, C, H, W), which axes does standard BatchNorm compute its mean and variance over, and why?"
   choices:
-    - "Over C only, treating each spatial position as its own distribution, because every spatial location needs its own statistics"
+    - "Over C only, treating each spatial position as its own separate distribution, because every single spatial location is assumed to need its own independent statistics"
     - "Over N, H, and W jointly for each channel C, because a convolution's weights are shared across every spatial position, so each channel is treated as one feature"
-    - "Over N only, since batch size alone determines how a channel is scaled"
-    - "Over all four axes at once, producing a single mean and variance for the entire feature map"
+    - "Over N only, since batch size alone determines how a channel is scaled and spatial position is assumed to be irrelevant"
+    - "Over all four axes at once, producing a single mean and variance for the entire feature map regardless of channel or batch size"
   answer_index: 1
   explanation: "A convolution's weights are shared across all spatial positions within a channel, so BatchNorm treats each channel as one 'feature' and normalizes it using the mean/variance computed jointly over the batch and spatial dimensions (N, H, W) — giving C means and C variances total, not one per pixel. As in the fully-connected case, training uses the current batch's statistics while inference uses accumulated running averages, so a single test image can still be normalized without needing a batch of images."
