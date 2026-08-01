@@ -1,0 +1,100 @@
+# _data/quizzes/05_llm_lineage.yml
+- type: mcq
+  question: "BERT's MLM objective selects 15% of input tokens for prediction, but the paper does not just replace all of them with [MASK]. What is the 80/10/10 rule applied to those selected tokens, and why is it needed?"
+  choices:
+    - "80% of tokens are masked, 10% are deleted, and 10% are duplicated, to teach the model to handle variable-length inputs"
+    - "The masking rate itself is 80% of the sequence during early pretraining, dropping to 10% and then 10% across three curriculum stages"
+    - "80% of selected tokens are replaced with [MASK], 10% are replaced with a random token, and 10% are left unchanged — this is needed because [MASK] never appears at fine-tuning time, so training the model to expect it as the only altered form would create a train/fine-tune mismatch"
+    - "80% of attention heads are masked, 10% of layers are frozen, and 10% of the embedding dimensions are dropped, to regularize the encoder"
+  answer_index: 2
+  explanation: "If every selected token were replaced with the literal [MASK] symbol, the model would only ever need to predict something for positions marked [MASK] — but [MASK] is a pretraining artifact that never appears in downstream fine-tuning inputs, so the model's representations at unmasked positions would never be pushed to be predictive. The 80/10/10 split forces the model to build good representations at every selected position regardless of what it sees there: 80% become [MASK] (the main signal), 10% become a random token (so the model can't just copy the input, and must actually keep track of what word 'should' be there even when the surface form is wrong), and 10% are left unchanged (so the model can't safely assume that seeing a real word means it isn't being asked to reconstruct it). This closes the pretrain/fine-tune mismatch that pure [MASK]-only replacement would create."
+
+- type: short
+  question: "BERT's pretraining originally included a Next Sentence Prediction (NSP) auxiliary objective alongside MLM. What was NSP meant to teach the model, and what was the later critique that led models like RoBERTa to drop it?"
+  answer_keywords:
+    - "relationships between sentences"
+    - "too easy to solve"
+    - "topic detection"
+    - "removing nsp"
+  model_answer: "NSP was meant to teach the model to reason about relationships between sentences — given two segments, predict whether the second immediately follows the first in the original document, which the BERT authors hoped would help downstream tasks like question answering and natural language inference. The later critique, especially from the RoBERTa paper, was that NSP's negative examples, paired with a random sentence from a different document, conflated topic and coherence signals, making the task too easy to solve by topic detection alone rather than by genuine discourse reasoning; RoBERTa found that removing NSP entirely, or replacing it with same-document contiguous segments, did not hurt and sometimes improved downstream performance."
+  explanation: "NSP's stated goal was to give the model some notion of inter-sentence coherence beyond what token-level MLM captures, useful for tasks like QA and NLI that reason across a sentence pair. The critique is that its specific formulation — a random sentence from a *different* document as the negative — bundled two separable signals (topic and coherence) into one task, and a model could achieve high NSP accuracy just by detecting a topic shift rather than by tracking genuine discourse coherence. RoBERTa's ablations showed removing NSP outright (using contiguous full-length segments instead) did not hurt, and sometimes helped, downstream task performance, which is why later encoder models generally dropped it."
+
+- type: short
+  question: "BERT, GPT-1, and T5 all adapt to downstream tasks primarily by fine-tuning — updating the pretrained model's weights on labeled task data. GPT-3 instead popularized in-context learning. What is the essential difference between these two adaptation paradigms?"
+  answer_keywords:
+    - "gradient descent"
+    - "no gradient updates"
+    - "parameters stay fixed"
+    - "changing what's in the prompt"
+  model_answer: "Fine-tuning adapts a pretrained model to a new task by continuing training — running gradient descent on labeled examples from that task, which updates the model's weights and produces a task-specialized copy of the model. In-context learning instead adapts the model's behavior purely through its input: task instructions and/or a handful of examples are placed directly in the prompt, and the frozen pretrained model conditions its next-token predictions on that context — there are no gradient updates and the model's parameters stay fixed throughout, so the same single model can be steered toward many different tasks just by changing what's in the prompt."
+  explanation: "Fine-tuning changes the model itself: gradients computed on labeled task data flow back into the weights, and after fine-tuning you have a distinct, task-specialized copy of the model. In-context learning changes nothing about the model's weights at all — the frozen model simply conditions its next-token prediction on whatever instructions and/or examples were placed in the prompt, so 'adaptation' happens entirely at inference time through the input text. This is why GPT-3's few-shot results were notable: a single frozen model could be steered across many tasks without ever touching its parameters, unlike BERT/GPT-1/T5's reliance on a per-task fine-tuning pass."
+
+- type: mcq
+  question: "Which statement correctly matches the progression from GPT-1 to GPT-2 to GPT-3 in terms of what was scaled and what capability emerged?"
+  choices:
+    - "GPT-1 was decoder-only and GPT-2 switched to an encoder-decoder architecture, before GPT-3 reverted to decoder-only"
+    - "GPT-2 introduced supervised fine-tuning for the first time; GPT-1 and GPT-3 were purely unsupervised, with no task adaptation possible at all"
+    - "GPT-3 is smaller than GPT-2 but trained on much more data, showing that data scale matters more than parameter count in this lineage"
+    - "Each generation scaled up model size and pretraining data (GPT-1 ~117M params on BooksCorpus; GPT-2 ~1.5B params on WebText; GPT-3 ~175B params on a much larger, more diverse web-text corpus), while the pretraining objective stayed causal language modeling throughout — the main new capability that emerged with scale was GPT-3's strong in-context/few-shot learning, which GPT-1's design did not target at all"
+  answer_index: 3
+  explanation: "All three GPT models share the same core recipe — a decoder-only Transformer trained with a causal (next-token prediction) language modeling objective — and the lineage is a story of scaling that recipe up: more parameters and more/broader pretraining data at each step. GPT-1 paired unsupervised pretraining with a supervised fine-tuning stage per task; GPT-2 pushed scale further and showed promising zero-shot task transfer purely from the language modeling objective, with no fine-tuning; GPT-3 scaled another two orders of magnitude and showed strong few-shot (and zero/one-shot) in-context learning from prompting alone. The architecture family (decoder-only) and objective (causal LM) did not change across the three; what changed was scale, and a capability — in-context task learning from a prompt — that became practically useful only once scale was large enough."
+
+- type: mcq
+  question: "Per the GPT-3 paper's terminology, which correctly distinguishes zero-shot, one-shot, and few-shot evaluation?"
+  choices:
+    - "Zero-shot means the model has zero parameters updated during fine-tuning, one-shot means one epoch of fine-tuning, and few-shot means a few epochs of fine-tuning"
+    - "Zero-shot, one-shot, and few-shot all refer to different numbers of gradient update steps performed on frozen embeddings"
+    - "Zero-shot: the model is given only a natural-language task description, with no examples; one-shot: exactly one example of the task is included in the prompt alongside the description; few-shot: a small number of examples are included in the prompt — in all three cases, no gradient updates are performed on the model's weights"
+    - "Few-shot requires the most labeled training data of the three, since the model must be fine-tuned on many examples before few-shot inference is possible"
+  answer_index: 2
+  explanation: "The GPT-3 paper defines all three settings as pure prompting conditions, with the model's weights entirely frozen — the difference between them is only how many task examples are placed in the prompt alongside the task description: zero for zero-shot, exactly one for one-shot, and a handful (empirically tens, up to what fits in the context window) for few-shot. None of the three involves any gradient update or weight change; that's precisely the point of in-context learning, and it's what makes the other options wrong — they all smuggle in some notion of actual training (epochs, gradient steps, a labeled training set) that the GPT-3 paper's zero/one/few-shot terminology explicitly does not use."
+
+- type: mcq
+  question: "How does T5's span-corruption pretraining objective differ from BERT's token-level masked-language-modeling objective?"
+  choices:
+    - "T5 and BERT use an identical masking scheme; the only difference is that T5 uses a larger vocabulary"
+    - "T5 replaces contiguous spans of tokens with a single sentinel token in the input, and a decoder must generate the missing span contents as output text; BERT instead masks tokens (mostly) independently and predicts each one in place using a single bidirectional encoder, with no separate text-generation step"
+    - "T5 masks whole documents at a time rather than spans or tokens, while BERT masks whole sentences at a time"
+    - "BERT generates free-form text to fill in masked spans, while T5 only predicts a single token at a fixed position"
+  answer_index: 1
+  explanation: "BERT's MLM corrupts the input at the token level (subject to the 80/10/10 rule) and predicts each masked position in place, using a single encoder stack whose output at each masked position is classified over the vocabulary — there is no separate decoder or generated sequence. T5's span-corruption instead removes contiguous runs of tokens (spans of varying length) from the input and collapses each removed span into a single unique sentinel token; the encoder sees the corrupted input, and a decoder autoregressively generates a target sequence consisting of the sentinels followed by the token spans that were removed. This is a strictly generative, sequence-to-sequence formulation, unlike BERT's in-place classification at masked positions."
+
+- type: mcq
+  question: "T5 casts every task — translation, summarization, classification, similarity scoring, and more — as text-to-text. How does it tell the model which task to perform on a given input?"
+  choices:
+    - "By training a separate output head/classifier layer for each task type, similar to BERT's fine-tuning approach, and selecting the right head at inference time"
+    - "By changing the model's number of layers depending on which task is being run"
+    - "By using a completely different vocabulary and tokenizer for each task"
+    - "By prepending a short natural-language task prefix to the input text (e.g. 'translate English to German:', 'summarize:', 'cola sentence:'), so the same model, objective, and decoding procedure can be reused across every task, with the desired task signaled purely through the input text rather than through any task-specific architecture"
+  answer_index: 3
+  explanation: "T5's central design idea is that every task can be expressed as 'input text in, output text out,' with no task-specific output heads, loss functions, or architectural changes at all — a classification task just outputs the class name as text, a regression-like similarity task outputs a string like a rounded score, and so on. The only thing that varies per task is a short text prefix prepended to the input, which tells the single shared model what to do; the model, training objective, and decoding procedure are identical across every task in the T5 suite. This is different from BERT's approach of attaching a new task-specific head on top of a shared encoder for each downstream task."
+
+- type: mcq
+  question: "Which correctly matches an architecture family to its attention pattern and typical task fit, in the encoder-only (BERT) / decoder-only (GPT) / encoder-decoder (T5, original Transformer) taxonomy?"
+  choices:
+    - "Encoder-only uses causal attention because it processes text left to right, and decoder-only uses bidirectional attention since it must understand the entire prompt before generating"
+    - "Encoder-only: bidirectional self-attention, well suited to understanding tasks like classification and tagging where the full input is available at once; decoder-only: causal (masked) self-attention, well suited to open-ended generation where output is produced left to right; encoder-decoder: bidirectional self-attention over the input plus causal self-attention and cross-attention in the decoder, well suited to sequence-to-sequence tasks like translation and summarization where distinct input and output sequences both exist"
+    - "Encoder-decoder models have no self-attention at all, relying only on cross-attention between the two halves"
+    - "Decoder-only models cannot be used for generation, since they lack any self-attention mechanism"
+  answer_index: 1
+  explanation: "An encoder (BERT-style) sees the whole input at once and has no reason to hide future tokens, so its self-attention is unmasked/bidirectional — good for tasks where you classify or label something given the full context. A decoder (GPT-style) generates left to right, so its self-attention must be causally masked to prevent looking at not-yet-generated tokens — a natural fit for open-ended generation. An encoder-decoder (T5-style) combines both: a bidirectional encoder processes the source sequence, and a decoder uses causal self-attention over its own partial output plus cross-attention into the encoder's output, which suits tasks with a genuinely distinct input and output sequence, like translation. The other options invert the bidirectional/causal pairing or deny attention mechanisms that are actually present."
+
+- type: short
+  question: "Describe the role of the [CLS] token, the [SEP] token, and segment embeddings in BERT's input representation."
+  answer_keywords:
+    - "aggregate representation"
+    - "separates segments"
+    - "which segment"
+    - "classification head"
+  model_answer: "The [CLS] token is prepended to every input, and its final hidden state is used as an aggregate representation of the whole input, typically fed into a classification head during fine-tuning. The [SEP] token separates segments within the input — it marks the end of a sentence, or the boundary between two packed sentences in a sentence-pair task. Segment embeddings are a learned embedding, added alongside the token and positional embeddings, that tells the model which segment — sentence A or sentence B — each token belongs to, letting the model distinguish tokens from the first sentence from tokens from the second sentence even though both are processed together in one sequence."
+  explanation: "[CLS] is a special token always placed first; because BERT's self-attention lets every position attend to every other position, [CLS]'s final hidden state can absorb information from the whole sequence and serves as a pooled, sequence-level representation used for classification. [SEP] is a boundary marker: it ends a single-sentence input, or sits between the two sentences of a sentence-pair input (with a trailing [SEP] after the second sentence too). Segment embeddings are a third embedding type, added to token and positional embeddings, that labels each token as belonging to segment A or segment B — necessary because self-attention alone has no notion of 'which sentence' a token came from once both sentences are concatenated into one sequence."
+
+- type: mcq
+  question: "The GPT-3 paper frames in-context learning ability as something that 'emerges' with scale rather than being explicitly trained for via a separate objective. Which statement best describes this scaling trend across GPT-1 → GPT-2 → GPT-3?"
+  choices:
+    - "In-context learning ability decreases with scale, which is why GPT-3 requires more fine-tuning examples than GPT-1 did"
+    - "GPT-2 and GPT-3 abandoned language modeling as the pretraining objective in favor of an explicit in-context-learning loss"
+    - "Scale only improved perplexity on the pretraining corpus; it had no measurable effect on downstream task performance without fine-tuning"
+    - "As model size and pretraining data scaled up by roughly three orders of magnitude from GPT-1 to GPT-3, the models' ability to perform new tasks from a natural-language prompt with few or no gradient updates improved sharply — a capability that was only weakly present (GPT-2's zero-shot results) or effectively absent (GPT-1's reliance on supervised fine-tuning) at smaller scale, even though the pretraining objective itself never changed"
+  answer_index: 3
+  explanation: "GPT-1, GPT-2, and GPT-3 are all trained with the same causal language modeling objective; what changed across the lineage was purely scale — more parameters and more/broader pretraining data. The GPT-3 paper's headline observation is that a capability nobody explicitly trained for — performing a new task well from just a natural-language prompt, with little or no gradient-based adaptation — got dramatically stronger as scale increased, going from essentially absent (GPT-1 needed supervised fine-tuning per task) through weakly present (GPT-2 showed some zero-shot transfer) to strong and broadly useful (GPT-3's few-shot results, often competitive with fine-tuned baselines). This is the sense in which in-context learning is described as an emergent capability of scale rather than a designed-in feature."
