@@ -2,11 +2,11 @@
 - type: mcq
   question: "In backprop, why do we prefer reverse-mode over forward-mode autodiff for training a neural network?"
   choices:
-    - "Forward mode doesn't support nonlinear activations"
     - "Reverse mode is efficient when there are many parameters and a single scalar loss output"
+    - "Forward mode doesn't support nonlinear activations"
     - "Reverse mode uses less memory in all cases"
     - "Forward mode can't compute exact gradients"
-  answer_index: 1
+  answer_index: 0
   explanation: "Reverse mode computes all parameter gradients in one backward pass, which is efficient exactly when outputs (loss) are few and inputs (parameters) are many — the opposite of forward mode's sweet spot."
 
 - type: mcq
@@ -23,10 +23,10 @@
   question: "What does He initialization account for that Xavier/Glorot initialization does not?"
   choices:
     - "The use of batch normalization"
-    - "ReLU zeroing out roughly half of its inputs, requiring a larger variance to compensate"
     - "The number of training epochs"
+    - "ReLU zeroing out roughly half of its inputs, requiring a larger variance to compensate"
     - "The choice of optimizer"
-  answer_index: 1
+  answer_index: 2
   explanation: "Xavier initialization assumes symmetric activations like tanh. ReLU zeros out negative inputs, halving the effective variance, so He initialization scales the variance up to compensate."
 
 - type: short
@@ -43,20 +43,20 @@
   question: "What does 'inverted dropout' scale, and when?"
   choices:
     - "It scales the loss by the dropout rate at test time"
-    - "It scales surviving activations by 1/keep_prob at train time, so no scaling is needed at inference"
     - "It scales the learning rate during training"
     - "It scales the weights only during the first epoch"
-  answer_index: 1
+    - "It scales surviving activations by 1/keep_prob at train time, so no scaling is needed at inference"
+  answer_index: 3
   explanation: "Inverted dropout divides the kept activations by keep_prob during training, so the expected activation magnitude matches inference time exactly, and no rescaling is needed when dropout is turned off for evaluation."
 
 - type: mcq
   question: "During training, what statistics does BatchNorm use to normalize activations, and what does it use at inference time?"
   choices:
-    - "Always the running average, both at train and inference time"
     - "The current mini-batch's mean/variance at train time; a running (exponential moving average) mean/variance at inference time"
+    - "Always the running average, both at train and inference time"
     - "A fixed mean of 0 and variance of 1 at all times"
     - "The mean/variance of the entire training set, recomputed every batch"
-  answer_index: 1
+  answer_index: 0
   explanation: "BatchNorm normalizes using the current mini-batch's statistics during training (which introduces useful noise/regularization) and switches to accumulated running statistics at inference, so a single example can be normalized without needing a batch."
 
 - type: short
@@ -93,8 +93,8 @@
   question: "What does dropout do differently at evaluation time compared to training time (with inverted dropout)?"
   choices:
     - "Nothing changes, dropout is still applied identically"
-    - "Dropout is disabled entirely and all units are used, unscaled"
     - "Dropout rate is doubled"
+    - "Dropout is disabled entirely and all units are used, unscaled"
     - "Only the last layer uses dropout at eval time"
-  answer_index: 1
+  answer_index: 2
   explanation: "At evaluation time, dropout is simply turned off — every unit is used, with no masking and no additional scaling, because inverted dropout already applied the 1/keep_prob correction during training."
