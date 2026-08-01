@@ -34,6 +34,30 @@ Then open <http://127.0.0.1:4000/llm-transformers-course/>.
 Run JS unit tests: `node --test test/*.test.mjs`
 Run Worker unit tests: `cd worker && npm install && npm test`
 
+## Notebook dependencies
+
+Colab preinstalls a recent `transformers`, but not every package a notebook might need (e.g. `timm`
+for later vision modules). The convention for notebooks that need a package beyond what Colab
+preinstalls by default:
+
+- Add a guarded install cell as the notebook's first code cell (right after the header/badge markdown
+  cell):
+
+  ```python
+  try:
+      import <package>
+  except ImportError:
+      %pip install -q <package>
+  ```
+
+  This no-ops on Colab (and any environment that already has the package), documents the dependency
+  explicitly, and self-heals on an environment where it's missing.
+
+Current notebooks needing a package beyond Colab's defaults:
+
+- `notebooks/05-llm-lineage/` needs `transformers`. This repo's own environment tests against
+  `transformers==4.18.0`; Colab's preinstalled version works too, but that pin is what's verified here.
+
 ## One-time setup for the chat widget
 
 The chat widget needs a Cloudflare Worker (holding your Anthropic API key
