@@ -34,8 +34,11 @@ greedy, temperature, top-k, and top-p sampling from scratch; evaluate the result
 ### Evaluation / how you know it worked
 
 - **Held-out perplexity**: how well the model predicts held-out text it wasn't trained on, on
-  average — lower is better. It's a standard language-modeling metric; you've computed a version of
-  this already in earlier modules.
+  average — lower is better. It has to be measured on held-out text specifically because
+  train-set perplexity is optimistically biased by memorization/overfitting and doesn't tell you
+  whether the model generalizes. This is closely related to the eval/validation loss you already
+  track periodically during training in Module 6's nanoGPT exercise — perplexity is just
+  `exp(cross-entropy loss)`.
 - **Self-BLEU**: generate a batch of samples from the model, then score each sample against the
   *other* generated samples (not against ground truth) using BLEU. High self-BLEU means the model's
   outputs are similar to each other (low diversity); low self-BLEU means more varied generations.
@@ -87,7 +90,10 @@ predictions, and attention-rollout/Grad-CAM on correct vs. incorrect examples.
 - **Confusion matrix**: a table showing, for each true class, how the model's predictions were
   distributed across all classes. The diagonal is correct predictions; everything off-diagonal is a
   specific kind of mistake — it tells you *which* classes get confused with which, not just an
-  overall error rate.
+  overall error rate. It doesn't tell you *why* those errors happen or point you to which specific
+  examples were misclassified (that's what the highest-confidence-wrong-predictions and
+  attention-rollout/Grad-CAM bullets below are for), and it can hide the fact that some
+  misclassifications matter more than others if error costs aren't symmetric across classes.
 - **Highest-confidence wrong predictions**: among the test examples the model got wrong, the ones
   where it was most confident (highest predicted probability) in the wrong answer. These are often
   the most informative errors to look at — either genuinely ambiguous/mislabeled examples, or a
@@ -137,9 +143,11 @@ build a hand-labeled query-to-relevant-image evaluation set and report retrieval
 
 ### Evaluation / how you know it worked
 
-- **Recall@k**: for each query, whether at least one relevant image appears in the top-k retrieved
-  results, averaged across all queries. It answers "how often does the system surface a relevant
-  result if I only look at the top k?"
+- **Recall@k**: for each query, the fraction of that query's *known-relevant* images that appear
+  in the top-k retrieved results (relevant images retrieved in the top-k, divided by the total
+  number of relevant images for that query), averaged across all queries. Since a query can have
+  several relevant images in your hand-labeled eval set, this rewards surfacing *more* of them
+  within the top-k, not just any one of them.
 - **MRR (Mean Reciprocal Rank)**: for each query, take 1 divided by the rank position of the first
   relevant result (e.g. if the first relevant image is ranked 3rd, that query scores 1/3), then
   average across all queries. It rewards relevant results appearing *earlier*, not just appearing
