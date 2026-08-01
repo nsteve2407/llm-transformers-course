@@ -35,8 +35,6 @@
     - "is 9 pixels"
     - "of 9 pixels"
     - "equals 9 pixels"
-    - "adds 2 pixels"
-    - "grows by 2 pixels"
   model_answer: "9 pixels (3 + 2 + 2 + 2, or via RF = N(k-1) + 1 = 4(2) + 1 = 9). Each additional 3x3 stride-1 layer adds (k-1) = 2 pixels to the receptive field, so the growth is linear in depth rather than something faster — this is part of why pooling and strided convolutions are used to grow the receptive field more efficiently."
   explanation: "For N stacked k×k stride-1 convolutions, the receptive field is RF = N(k-1) + 1. With N=4 and k=3, RF = 4(2) + 1 = 9. Each layer only adds (k-1) pixels on top of the previous receptive field, so reaching a large receptive field this way costs one extra layer's worth of parameters and nonlinearity per +2 pixels of context."
 

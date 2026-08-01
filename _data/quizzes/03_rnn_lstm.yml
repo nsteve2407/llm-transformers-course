@@ -36,6 +36,7 @@
     - "constant error carousel"
     - "forget gate"
     - "elementwise"
+    - "element wise"
   model_answer: "Because the cell-state update is additive rather than passed through a weight matrix and squashing nonlinearity at every step, the gradient of c_t with respect to c_{t-1} is just the forget gate value f_t (an elementwise multiply), not a full Jacobian involving W. If the forget gate stays close to 1, gradients can flow backward across many time steps roughly unattenuated instead of being repeatedly multiplied by the same recurrent weight matrix — this is the 'constant error carousel' idea behind the LSTM."
   explanation: "The vanilla RNN's recurrence forces every backward step through tanh'(·) and a multiply by W_hh, so the gradient is a long product of matrices that shrinks or grows geometrically. The LSTM's cell-state path is additive: ∂c_t/∂c_{t-1} = f_t, an elementwise gate value bounded in [0,1] but not forced toward the same small number at every step. When the forget gate learns to stay near 1 for information that should persist, the gradient along the cell-state path barely decays across long lags, which is the core reason LSTMs handle long-range dependencies that vanilla RNNs cannot."
 
