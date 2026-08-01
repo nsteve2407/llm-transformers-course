@@ -55,9 +55,14 @@ preinstalls by default:
 
 Current notebooks needing a package beyond Colab's defaults:
 
-- `notebooks/05-llm-lineage/`, `notebooks/08-efficient-transformers/`, `notebooks/09-vit/`, and
-  `notebooks/10-swin/` need `transformers`. This repo's own environment tests against
-  `transformers==4.18.0`; Colab's preinstalled version works too, but that pin is what's verified here.
+- `notebooks/05-llm-lineage/`, `notebooks/08-efficient-transformers/`, `notebooks/09-vit/`,
+  `notebooks/10-swin/`, `notebooks/11-detr/`, and `notebooks/12-clip/` need `transformers`. This
+  repo's own environment tests against `transformers==4.18.0`; Colab's preinstalled version works
+  too, but that pin is what's verified here.
+- `notebooks/11-detr/` also needs `timm` (required by `DetrForObjectDetection.from_pretrained` for
+  its CNN backbone) and `torchmetrics` (for mAP evaluation). `scipy` is also used
+  (`scipy.optimize.linear_sum_assignment` for Hungarian matching) but is a standard Colab
+  preinstall, so it has no guarded install cell.
 
 ## One-time setup for the chat widget
 
