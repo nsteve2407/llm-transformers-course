@@ -8,6 +8,8 @@ has_children: true
 
 # Module 10: Hierarchical ViTs (Swin Transformer)
 
+Windowed (W-MSA) and shifted-window (SW-MSA) attention, the cyclic-shift trick, hierarchical patch merging.
+
 ## Subtopics
 
 - Why global MSA is O((HW)²) in patch count and prohibitive for dense high-res tasks

@@ -55,7 +55,8 @@ preinstalls by default:
 
 Current notebooks needing a package beyond Colab's defaults:
 
-- `notebooks/05-llm-lineage/` needs `transformers`. This repo's own environment tests against
+- `notebooks/05-llm-lineage/`, `notebooks/08-efficient-transformers/`, `notebooks/09-vit/`, and
+  `notebooks/10-swin/` need `transformers`. This repo's own environment tests against
   `transformers==4.18.0`; Colab's preinstalled version works too, but that pin is what's verified here.
 
 ## One-time setup for the chat widget
