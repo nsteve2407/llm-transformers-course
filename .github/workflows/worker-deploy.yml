@@ -1,7 +1,18 @@
 name: Deploy chat Worker
 
+# NOTE: the `push` trigger below will show as a failed run until the
+# CLOUDFLARE_API_TOKEN repo secret is configured (see README "One-time setup
+# for the chat widget"). That's expected for repos that haven't finished
+# Cloudflare setup yet -- it isn't a sign anything is broken.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - "worker/**"
+      - "modules/**"
+      - "scripts/build_chat_context.mjs"
 
 jobs:
   deploy:
