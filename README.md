@@ -49,7 +49,7 @@ as a secret) deployed once:
 
 ## Course content status
 
-Module 1 (DNN Refresher) is fully built out as the reference implementation.
-Modules 2–13 follow the same structure (content + reading.md + quiz.yml +
+Modules 1–3 (DNN Refresher, CNN Refresher, RNN & LSTM) are fully built out.
+Modules 4–13 follow the same structure (content + reading.md + quiz.yml +
 notebook pair) and are tracked in follow-up implementation plans under
 `docs/superpowers/plans/`.
