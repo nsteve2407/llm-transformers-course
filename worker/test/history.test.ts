@@ -29,12 +29,18 @@ describe("trimHistory", () => {
       msg("assistant", "a4"),
     ];
     const result = trimHistory(messages, 6);
-    // naive slice(-6) would start with "a1" (assistant) here; the pattern
-    // starting at index 0 with "assistant" role means index 2 is also
-    // "assistant", so a plain slice(-6) starting at index 2 starts with
-    // an assistant message.
-    expect(result.length).toBeLessThanOrEqual(6);
-    expect(result[0].role).toBe("user");
+    // slice(-6) on this 8-element array takes indices 2-7 ([u2,a2,u3,a3,u4,a4]),
+    // which already starts with "user" here, so this test just checks basic
+    // truncation to maxMessages; the leading-non-user-shift behavior is
+    // exercised separately below.
+    expect(result).toEqual([
+      msg("user", "u2"),
+      msg("assistant", "a2"),
+      msg("user", "u3"),
+      msg("assistant", "a3"),
+      msg("user", "u4"),
+      msg("assistant", "a4"),
+    ]);
   });
 
   it("drops leading non-user messages left behind by a naive slice", () => {

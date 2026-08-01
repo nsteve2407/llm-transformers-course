@@ -72,6 +72,9 @@ function validateChatRequestBody(body: unknown, maxTotalChars: number): string |
   if (!Array.isArray(messages)) {
     return "`messages` must be an array.";
   }
+  if (messages.length === 0) {
+    return "`messages` must not be empty.";
+  }
   let totalChars = 0;
   for (const message of messages) {
     if (
