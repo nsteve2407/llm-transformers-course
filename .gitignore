@@ -12,4 +12,8 @@ worker/src/context/*.json
 !worker/src/context/.gitkeep
 worker/.dev.vars
 
+# Notebooks that download datasets locally (e.g. torchvision.datasets.CIFAR10(root="./data", ...))
+# create an untracked data/ directory under the notebook's own working directory when executed.
+data/
+
 .DS_Store
