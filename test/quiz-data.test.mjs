@@ -15,6 +15,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { gradeShortAnswer } from "../assets/js/quiz-logic.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const quizzesDir = path.join(__dirname, "..", "_data", "quizzes");
@@ -117,6 +118,75 @@ for (const fileName of quizFiles) {
       distinct >= 2,
       `${fileName}: all ${mcqIndices.length} mcq answer_index values are identical (${mcqIndices[0]}) -- ` +
         `a learner could guess the same position every time`
+    );
+  });
+
+  test(`${fileName}: question count is 8-10`, () => {
+    const questions = loadQuizFile(filePath);
+    assert.ok(
+      questions.length >= 8 && questions.length <= 10,
+      `${fileName} has ${questions.length} questions, expected 8-10`
+    );
+  });
+
+  test(`${fileName}: mcq/short ratio is roughly 70/30`, () => {
+    const questions = loadQuizFile(filePath);
+    const total = questions.length;
+    const mcqCount = questions.filter((q) => q.type === "mcq").length;
+    const mcqFraction = mcqCount / total;
+
+    // Tolerance around the ~70/30 target: flag only if mcq share falls outside roughly 60-80% of the
+    // file, rather than requiring an exact 70/30 split.
+    assert.ok(
+      mcqFraction >= 0.6 && mcqFraction <= 0.8,
+      `${fileName}: mcq/short ratio is ${mcqCount}/${total - mcqCount} (${(mcqFraction * 100).toFixed(0)}% ` +
+        `mcq), expected roughly 60-80% mcq (targeting ~70/30 mcq/short)`
+    );
+  });
+
+  test(`${fileName}: correct mcq choice is not the longest choice in more than half the file's mcqs`, () => {
+    const questions = loadQuizFile(filePath);
+    const mcqs = questions.filter((q) => q.type === "mcq");
+    if (mcqs.length === 0) return; // nothing to check
+
+    // "Longest" matches the convention used when these quiz files were hand-balanced (see
+    // .superpowers/sdd/2026-08-01-modules-7-8/task-{2,5}-report.md): the correct choice's length is
+    // the max length among all choices for that question (ties count as "longest").
+    let longestCorrectCount = 0;
+    const offenders = [];
+    mcqs.forEach((q, i) => {
+      const lengths = q.choices.map((c) => c.length);
+      const maxLength = Math.max(...lengths);
+      if (lengths[q.answer_index] === maxLength) {
+        longestCorrectCount += 1;
+        offenders.push(`mcq${i}`);
+      }
+    });
+
+    const threshold = Math.ceil(mcqs.length / 2);
+    assert.ok(
+      longestCorrectCount <= threshold,
+      `${fileName}: correct choice is the longest in ${longestCorrectCount}/${mcqs.length} mcqs ` +
+        `(${offenders.join(", ")}), expected at most ${threshold} (half, rounded up) -- a learner could ` +
+        `guess "pick the longest option" too reliably`
+    );
+  });
+
+  test(`${fileName}: every short-answer model_answer self-grades correct`, () => {
+    const questions = loadQuizFile(filePath);
+    const offenders = [];
+
+    questions.forEach((q, i) => {
+      if (q.type !== "short") return;
+      if (!gradeShortAnswer(q, q.model_answer)) {
+        offenders.push(`q${i}: "${q.model_answer}" does not match any of ${JSON.stringify(q.answer_keywords)}`);
+      }
+    });
+
+    assert.deepEqual(
+      offenders,
+      [],
+      `${fileName} has model_answer text that fails its own answer_keywords self-grade:\n${offenders.join("\n")}`
     );
   });
 }
