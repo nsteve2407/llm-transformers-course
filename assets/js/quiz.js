@@ -72,9 +72,12 @@ function initQuiz(container) {
     scoreEl.textContent = `Score: ${correctCount} / ${total}`;
     results.forEach((r, i) => {
       const feedback = container.querySelector(`.quiz-feedback[data-index="${i}"]`);
-      feedback.textContent = r.correct
-        ? "Correct."
-        : `Incorrect. ${r.explanation}`;
+      const parts = [r.correct ? "Correct." : "Incorrect."];
+      if (r.explanation) parts.push(r.explanation);
+      if (r.question.type === "short" && r.question.model_answer) {
+        parts.push(`Model answer: ${r.question.model_answer}`);
+      }
+      feedback.textContent = parts.join(" ");
       feedback.style.color = r.correct ? "green" : "crimson";
     });
   });
