@@ -1,0 +1,100 @@
+# _data/quizzes/03_rnn_lstm.yml
+- type: mcq
+  question: "In BPTT, the gradient ∂L_T/∂h_t depends on a product of Jacobians ∂h_k/∂h_{k-1} for k from t+1 to T. Why does this specific product structure — rather than depth alone — make vanishing/exploding gradients especially severe in vanilla RNNs?"
+  choices:
+    - "Because each Jacobian involves the same recurrent weight matrix W_hh reused at every step, so its eigenvalues are effectively raised to a power equal to the number of time steps between t and T"
+    - "Because RNNs use more parameters per layer than CNNs, so the gradient has more terms to sum"
+    - "Because the loss function used for sequence models is inherently non-convex"
+    - "Because softmax outputs at each time step are bounded between 0 and 1, which caps the gradient magnitude"
+  answer_index: 0
+  explanation: "In a deep feedforward net, each layer has its own independent weight matrix, so the product of Jacobians mixes many different matrices. In an RNN unrolled over time, the *same* W_hh (and the same nonlinearity-derivative structure) is reused at every step, so the product of Jacobians behaves like W_hh raised to a power. Whether its dominant eigenvalue is below or above 1 determines whether that power shrinks toward zero or grows without bound, and the number of steps between t and T (the gap being bridged) is exactly the exponent — which is why long-range dependencies are especially fragile."
+
+- type: mcq
+  question: "Gradient clipping (e.g. rescaling the global gradient norm down to a threshold) is a standard fix for exploding gradients in RNN training. Why does it do nothing to address vanishing gradients?"
+  choices:
+    - "Clipping only rescales a gradient that has already grown too large; if the gradient has instead shrunk toward zero, there is no large value to rescale down, and clipping leaves it near zero"
+    - "Clipping automatically increases the learning rate, which would only worsen vanishing gradients"
+    - "Clipping is applied to the loss value, not to the gradients themselves"
+    - "Clipping removes the recurrent connections that are responsible for vanishing gradients"
+  answer_index: 0
+  explanation: "Clipping caps a gradient's norm from above once it exceeds a threshold, which prevents the instability and divergence caused by exploding gradients. It has no mechanism to amplify a gradient that has already decayed toward zero — a vanishing gradient carries almost no signal to begin with, and there is nothing for clipping to act on. Vanishing gradients need a structural fix (e.g. LSTM's additive cell update, better initialization, or skip connections), not a magnitude cap."
+
+- type: mcq
+  question: "A language model is partway through: '...the report was thorough, but ultimately he decided to reject it because the numbers didn't add up.' At this point the LSTM needs to (a) stop carrying forward context from an earlier, now-irrelevant clause, and (b) start writing new information about 'he decided to reject it' into the cell state. Which gates are primarily responsible for (a) and (b), respectively?"
+  choices:
+    - "Output gate for (a), input gate for (b)"
+    - "Forget gate for (a), input gate for (b)"
+    - "Input gate for (a), forget gate for (b)"
+    - "Forget gate for (a), output gate for (b)"
+  answer_index: 1
+  explanation: "The forget gate decides how much of the existing cell state to retain versus discard — so dropping stale context is its job. The input gate decides how much of the newly computed candidate cell state to write in — so incorporating new information is its job. The output gate is a separate decision again: it controls how much of the (already updated) cell state is exposed as the hidden state at this step, not whether anything is forgotten or written."
+
+- type: short
+  question: "Vanilla RNN hidden states are computed as h_t = tanh(W h_{t-1} + ...), a purely multiplicative recurrence. LSTM's cell state instead updates as c_t = f_t ⊙ c_{t-1} + i_t ⊙ g_t, an additive update gated by f_t. Explain why this additive structure helps gradients survive over many time steps better than the vanilla RNN recurrence does."
+  answer_keywords:
+    - "additive"
+    - "constant error carousel"
+    - "forget gate"
+    - "elementwise"
+  model_answer: "Because the cell-state update is additive rather than passed through a weight matrix and squashing nonlinearity at every step, the gradient of c_t with respect to c_{t-1} is just the forget gate value f_t (an elementwise multiply), not a full Jacobian involving W. If the forget gate stays close to 1, gradients can flow backward across many time steps roughly unattenuated instead of being repeatedly multiplied by the same recurrent weight matrix — this is the 'constant error carousel' idea behind the LSTM."
+  explanation: "The vanilla RNN's recurrence forces every backward step through tanh'(·) and a multiply by W_hh, so the gradient is a long product of matrices that shrinks or grows geometrically. The LSTM's cell-state path is additive: ∂c_t/∂c_{t-1} = f_t, an elementwise gate value bounded in [0,1] but not forced toward the same small number at every step. When the forget gate learns to stay near 1 for information that should persist, the gradient along the cell-state path barely decays across long lags, which is the core reason LSTMs handle long-range dependencies that vanilla RNNs cannot."
+
+- type: mcq
+  question: "Which of the following correctly describes a structural difference between GRU and LSTM?"
+  choices:
+    - "GRU merges the cell state and hidden state into a single state vector and uses two gates (reset, update) instead of LSTM's three (forget, input, output)"
+    - "GRU has more parameters than LSTM because it adds an extra gate for long-term memory"
+    - "GRU cannot be used for sequence modeling, only for classification tasks"
+    - "LSTM has no gating mechanism, while GRU introduces gating for the first time"
+  answer_index: 0
+  explanation: "GRU collapses LSTM's separate cell-state/hidden-state distinction into a single state, and replaces LSTM's three gates with two (reset and update) that jointly control how much of the old state to keep and how the candidate state is computed. Fewer gates and one state instead of two means fewer parameters, which is why GRUs are often preferred when data or compute is limited or training speed matters, while LSTM's extra gate and separate cell state can give it a bit more expressive control on tasks that need very long-range memory."
+
+- type: mcq
+  question: "Bidirectional RNNs run one RNN left-to-right and another right-to-left over a sequence, concatenating their hidden states at each position. Why can't this architecture be used directly for autoregressive text generation?"
+  choices:
+    - "Bidirectional RNNs are too computationally slow to ever run at inference time"
+    - "The backward-direction RNN needs to see the entire future of the sequence before it can compute a hidden state at position t, but at generation time the tokens after t don't exist yet"
+    - "Bidirectional RNNs cannot compute gradients during backpropagation"
+    - "Bidirectional RNNs only support fixed-length sequences, and generated text has variable length"
+  answer_index: 1
+  explanation: "The entire benefit of a bidirectional RNN is that its representation at position t is conditioned on the full sequence, both past and future — which requires the future tokens to already exist. Autoregressive generation produces tokens one at a time, left to right, so there is no 'future' to feed the backward-direction RNN. Bidirectional RNNs are used for encoding a fully known input (e.g. the encoder in seq2seq, or tagging/classification), not for generating output token by token."
+
+- type: mcq
+  question: "In a vanilla (no-attention) seq2seq encoder-decoder, the encoder compresses the entire input sequence into a single fixed-length context vector, which the decoder uses to generate every output token. What problem does this cause, especially for long input sequences?"
+  choices:
+    - "The decoder becomes unable to produce variable-length outputs"
+    - "The fixed-length vector must summarize an arbitrarily long input, so information gets diluted or lost as sequence length grows, degrading performance on long sequences"
+    - "The encoder's gradients vanish immediately regardless of sequence length"
+    - "The fixed-length vector causes the decoder to ignore the input entirely and rely only on its own previous outputs"
+  answer_index: 1
+  explanation: "Squeezing an entire source sequence's information into one fixed-size vector is a hard compression problem. For short sequences it can work reasonably well, but as sequence length grows, that single vector becomes an information bottleneck — it cannot retain enough detail about every input token, so decoding quality degrades, especially for later output tokens or long inputs. This bottleneck is exactly the motivation for attention, which lets the decoder look back at all encoder hidden states directly instead of relying on one summary vector."
+
+- type: mcq
+  question: "What is the key computational difference between Bahdanau (additive) attention and Luong (multiplicative/dot-product) attention when scoring how well a decoder state aligns with each encoder hidden state?"
+  choices:
+    - "Bahdanau attention scores alignment with a small feedforward network (concatenating the two states and passing them through a learned weight vector), while Luong attention scores alignment with a dot product (or bilinear form) between the decoder and encoder states"
+    - "Bahdanau attention only works with LSTMs, while Luong attention only works with GRUs"
+    - "Luong attention requires no learned parameters at all, while Bahdanau attention requires the entire encoder to be retrained from scratch"
+    - "Bahdanau attention computes context vectors only after decoding finishes, while Luong attention computes them before decoding starts"
+  answer_index: 0
+  explanation: "Bahdanau's alignment score is computed by concatenating the decoder state and each encoder state and passing them through a small feedforward layer (an 'additive' score: v^T tanh(W1 h_dec + W2 h_enc)). Luong's alignment score is instead a direct dot product or bilinear product between the two vectors (h_dec^T h_enc, or h_dec^T W h_enc), which is cheaper to compute. Both still normalize the resulting scores with softmax and take a weighted sum of encoder states to form the context vector — the difference is in how the raw alignment score itself is computed."
+
+- type: short
+  question: "A decoder computes unnormalized alignment (energy) scores of 1.0 against encoder hidden state h1 and 4.0 against encoder hidden state h2. After applying softmax to get attention weights, which encoder hidden state dominates the resulting context vector, and why does a raw score gap of only 3 produce such a lopsided result?"
+  answer_keywords:
+    - "h2 dominates"
+    - "exponential"
+    - "softmax amplifies"
+    - "second encoder state"
+  model_answer: "h2 dominates the context vector. Softmax weights are proportional to exp(score), so a raw score gap of 3 becomes a ratio of roughly e^3 (about 20:1) after exponentiating — the context vector ends up almost entirely a copy of h2, with only a small contribution from h1. This is why attention weights can look sharply 'peaky' even when the underlying alignment scores aren't wildly different: the exponential in softmax amplifies small score differences into large weight disparities."
+  explanation: "Softmax turns additive score differences into multiplicative weight ratios via exponentiation, so weight(h2)/weight(h1) = exp(4.0 - 1.0) = exp(3) ≈ 20. That means h2 receives roughly 20 times the weight of h1, and the resulting context vector (the weighted sum of encoder states) is dominated by h2 almost to the exclusion of h1 — a useful intuition for why attention distributions often concentrate sharply on one or a few positions rather than spreading evenly."
+
+- type: short
+  question: "The Transformer's self-attention mechanism grew directly out of RNN-based encoder-decoder attention (Bahdanau/Luong). What key idea carries over from RNN attention into Transformer self-attention, and what major structural piece of the RNN encoder-decoder setup is discarded?"
+  answer_keywords:
+    - "query key value"
+    - "weighted sum"
+    - "no recurrence"
+    - "discards recurrence"
+  model_answer: "What carries over: computing alignment/compatibility scores between a query and a set of keys, normalizing them with softmax, and using those weights to form a context vector as a weighted sum of value vectors — this is exactly the query/key/value framing that Transformer self-attention formalizes and generalizes, letting every position attend to every other position rather than just a decoder attending to an encoder. What's discarded: the recurrent RNN that produced the hidden states being attended over in the first place — Transformers compute queries, keys, and values directly from input embeddings (plus positional encodings) via learned linear projections, with no sequential recurrence at all, which is what makes them parallelizable across the whole sequence."
+  explanation: "RNN attention already had the essential shape of self-attention: score a query against a set of keys, softmax-normalize the scores into weights, and take a weighted sum of values to form a context vector. The Transformer keeps that shape but strips away the RNN that used to generate the hidden states being scored — queries, keys, and values are instead learned linear projections of the (positionally encoded) input embeddings themselves, computed independently per position. Removing the sequential recurrence is precisely what allows all positions to be processed in parallel instead of one time step at a time."
