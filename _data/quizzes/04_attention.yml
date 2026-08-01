@@ -1,0 +1,97 @@
+# _data/quizzes/04_attention.yml
+- type: mcq
+  question: "In scaled dot-product attention, Q·K^T is divided by √d_k before the softmax. What problem does this scaling factor solve?"
+  choices:
+    - "For large d_k, the dot products grow large in magnitude, pushing the softmax into regions with extremely small gradients; dividing by √d_k keeps the scores in a range where softmax gradients remain well-behaved"
+    - "It normalizes the attention weights so they sum to 1, replacing the need for softmax"
+    - "It reduces the number of learned parameters in the attention mechanism by a factor of d_k"
+    - "It converts the raw dot-product scores into probabilities, which softmax alone cannot do"
+  answer_index: 0
+  explanation: "If Q and K have components with mean 0 and variance 1, their dot product has variance proportional to d_k, so as d_k grows the raw scores can become large in magnitude. Feeding large-magnitude scores into softmax pushes it toward a near one-hot distribution, where the gradient with respect to most of the inputs is nearly zero — this stalls learning. Dividing by √d_k counteracts the variance growth so the softmax stays in a regime with useful gradients, regardless of d_k. It has nothing to do with parameter count or with softmax's normalization itself, which happens either way."
+
+- type: mcq
+  question: "The Transformer uses 8 attention heads with d_k=64 each (for d_model=512) rather than a single head with d_k=512. What is the primary benefit of splitting into multiple smaller heads?"
+  choices:
+    - "Each head can learn to attend to different representation subspaces and positions, capturing different types of relationships in parallel that a single averaged attention distribution would blur together"
+    - "Multiple smaller heads reduce the total number of parameters compared to one large head with the same d_model"
+    - "Multiple heads remove the need for the 1/√d_k scaling factor entirely"
+    - "A single large head would require quadratic memory in sequence length, while multiple small heads only require linear memory"
+  answer_index: 0
+  explanation: "A single attention head produces one weighted average per query position, so whatever relationships it captures get combined into one distribution — different kinds of structure (e.g. attending to the previous token vs. attending to a distant coreferent) can end up averaged together and blurred. Splitting into multiple heads, each with its own learned Q/K/V projections into a smaller subspace, lets different heads specialize in different relationships, and the outputs are concatenated and linearly combined afterward. The total projection parameter count (8 heads × d_k=64 vs. 1 head × d_k=512) is essentially the same either way, both still need the 1/√d_k scaling (per-head, using that head's own d_k), and both scale as O(n²) in memory with sequence length regardless of head count."
+
+- type: mcq
+  question: "In the original encoder-decoder Transformer, which statement correctly matches each attention sublayer to its role?"
+  choices:
+    - "The encoder uses (unmasked) self-attention where Q, K, and V all come from the encoder's own sequence; the decoder's first sublayer uses masked self-attention over its own partially-generated sequence; the decoder's second sublayer uses cross-attention where Q comes from the decoder and K, V come from the encoder's output"
+    - "The encoder uses cross-attention against the decoder's output, and the decoder uses only unmasked self-attention"
+    - "Both the encoder and decoder use only masked self-attention, since masking is required everywhere to prevent information leakage"
+    - "The encoder has no attention sublayer at all; only the decoder computes attention"
+  answer_index: 0
+  explanation: "The encoder can see the entire input sequence at once, so its self-attention needs no mask. The decoder generates tokens left to right, so its self-attention sublayer is masked to prevent a position from attending to positions after it (future tokens don't exist yet at generation time). The decoder's second attention sublayer is cross-attention: its queries come from the decoder's own (masked self-attention) output so far, but its keys and values come from the encoder's final output, which is how the decoder incorporates information about the source sequence."
+
+- type: short
+  question: "The Transformer's sinusoidal positional encoding defines PE(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model)). Why did the authors choose this specific sin/cos construction instead of, say, directly encoding the position as a single scalar — what property does it give the model for reasoning about relative positions?"
+  answer_keywords:
+    - "linear function"
+    - "relative position"
+    - "sin and cosine"
+  model_answer: "Because for any fixed offset k, PE(pos+k) can be expressed as a linear function of PE(pos) — a rotation-like linear transformation that falls out of the angle-sum identities for sin and cosine at each frequency — the model can, in principle, learn to attend based on relative positions rather than only absolute ones. A single scalar position value doesn't have this property: there's no simple linear operation that turns 'position value at pos' into 'position value at pos+k' independent of pos, so relative-offset reasoning would have to be learned from scratch rather than falling out of the encoding's structure."
+  explanation: "Each dimension of the sinusoidal encoding oscillates at a different frequency, and because sin(a+b) and cos(a+b) can be written as linear combinations of sin(a), cos(a), sin(b), cos(b), PE(pos+k) turns out to be a linear function of PE(pos) for any fixed k. That means a learned linear layer (which is exactly what attention's Q/K projections are) can, in principle, recover relative-position information directly from the encoding. A single scalar for position lacks this structure — there is no fixed linear map from one scalar to 'that scalar plus k' that a network could exploit the same way, which is part of why the multi-frequency sin/cos construction was chosen over a simpler encoding."
+
+- type: mcq
+  question: "Compared to learned absolute positional embeddings (a lookup table trained per position index), what practical advantage does the fixed sinusoidal positional encoding have regarding sequences longer than any seen during training?"
+  choices:
+    - "The sinusoidal formula can be evaluated at any position index with the same closed-form function, so it can in principle be computed for sequence lengths longer than training, whereas a learned embedding table has no trained entry for position indices beyond the maximum length seen during training"
+    - "Sinusoidal encodings always outperform learned positional embeddings on every downstream task"
+    - "Learned positional embeddings cannot be added to word embeddings, while sinusoidal encodings can"
+    - "Sinusoidal encodings require backpropagation through the encoding itself, while learned embeddings do not"
+  answer_index: 0
+  explanation: "A learned positional embedding table has one row per position index, up to whatever maximum length was chosen at training time — there is simply no row, and no trained representation, for a position beyond that maximum. The sinusoidal encoding is a deterministic function of the position index, so it can be evaluated at any position, including ones longer than anything seen during training, which is why the paper hypothesized it might extrapolate better to unseen lengths. The paper reports the two perform similarly on lengths seen during training; the extrapolation argument, not universal superiority, is the stated motivation. Both are added to the word embeddings in the same way."
+
+- type: mcq
+  question: "The original Transformer places LayerNorm after the residual addition (Post-LN: LN(x + Sublayer(x))), and needs a careful learning-rate warmup to train stably. How does Pre-LN (x + Sublayer(LN(x))) change this?"
+  choices:
+    - "Pre-LN keeps an unnormalized identity path all the way through the residual stream, giving a more direct gradient path to early layers; this generally makes deep Pre-LN Transformers more stable to train and less dependent on careful warmup than Post-LN"
+    - "Pre-LN removes the residual connections entirely, which is what improves stability"
+    - "Pre-LN and Post-LN are mathematically identical once training converges, so there is no practical difference between them"
+    - "Pre-LN requires a much larger warmup schedule than Post-LN because its gradients are less stable"
+  answer_index: 0
+  explanation: "In Post-LN, LayerNorm sits directly on the residual path, so the residual stream itself gets renormalized at every layer; gradients backpropagating to early layers pass through many of these normalizations, and large learning rates early in training (before the model has settled) can cause instability, which is why warmup is important. In Pre-LN, the sublayer's input is normalized but the residual stream itself is left unnormalized end to end, preserving a clean identity path for gradients. This tends to make deep Pre-LN models easier to train and less sensitive to (or sometimes able to skip) warmup, though some later work reports it can slightly cap final performance compared to a well-tuned Post-LN model."
+
+- type: short
+  question: "Both a causal (look-ahead) mask and a padding mask are implemented as additive masks added to the attention scores before softmax. Describe how each is constructed and what distinct problem each one prevents."
+  answer_keywords:
+    - "upper triangular"
+    - "future positions"
+    - "padding tokens"
+  model_answer: "The causal mask is an upper-triangular matrix of negative-infinity values (zero on and below the diagonal, negative infinity above it) added to the raw attention scores, so after softmax a query position gets zero weight on any future positions — this stops the decoder from attending to tokens it hasn't generated yet. The padding mask instead places negative infinity at whichever positions correspond to padding tokens added to make sequences in a batch the same length, regardless of where those positions fall in the sequence, so real tokens never attend to meaningless padding. Both are additive masks, so a batch that needs both causal and padding masking can simply sum the two mask tensors before adding them to the scores."
+  explanation: "The causal mask blocks 'leaking' future information during training and generation: with an upper-triangular −∞ pattern, softmax assigns effectively zero probability to any position after the query position, so predictions at position t can only depend on positions ≤ t. The padding mask solves a different, batching-specific problem: sequences in a batch are padded to a common length, and without masking, real tokens would attend to (and be influenced by) meaningless pad-token representations; setting −∞ at pad positions removes them from every softmax regardless of their location. Because both are additive tensors of the same shape, they compose by simple addition before the softmax."
+
+- type: mcq
+  question: "For a sequence of length n and representation dimension d, how does self-attention's per-layer complexity and maximum path length between any two positions compare to a recurrent layer and a single convolutional layer?"
+  choices:
+    - "Self-attention has O(n²·d) per-layer complexity but only O(1) maximum path length, since every position connects directly to every other position in one layer; a recurrent layer has O(n·d²) complexity with O(n) path length, since information must pass sequentially through every intermediate step; a single convolutional layer (fixed kernel width) only directly connects positions within its kernel, so its effective path length grows with the number of stacked (or dilated) layers needed to bridge distant positions"
+    - "Self-attention has the longest maximum path length of the three, since it must process the sequence one position at a time"
+    - "A recurrent layer has O(1) maximum path length between any two positions because its hidden state carries information forward automatically"
+    - "Self-attention and a convolutional layer have identical per-layer complexity, O(n·d²), while only a recurrent layer is O(n²·d)"
+  answer_index: 0
+  explanation: "Self-attention computes an n×n score matrix, giving O(n²·d) complexity per layer, but because every position attends directly to every other position within that one layer, the maximum path length for information to travel between any two positions is O(1). A recurrent layer is cheaper per step (O(n·d²) total) but information must pass through every intermediate hidden state sequentially, giving an O(n) maximum path length. A single convolutional layer with a fixed kernel width only connects nearby positions directly, so connecting two far-apart positions requires stacking multiple convolutional layers (or using dilation) — the opposite of self-attention's single-layer, all-pairs connectivity, and the opposite of the (incorrect) claim that RNNs have O(1) path length."
+
+- type: short
+  question: "Each Transformer layer includes a position-wise feed-forward sublayer, FFN(x) = max(0, xW1 + b1)W2 + b2, applied to every position separately. What is the purpose of this sublayer, and why is it called 'position-wise'?"
+  answer_keywords:
+    - "same weights"
+    - "nonlinear transformation"
+    - "four times"
+  model_answer: "This sublayer applies the same weights (the same W1, b1, W2, b2) at every position in the sequence, giving each position an additional nonlinear transformation — a two-layer MLP with a ReLU in between — computed independently of every other position; it's called 'position-wise' precisely because no information is mixed across positions here, unlike attention, where mixing information across positions is the whole point. In the base model the inner dimension d_ff is four times d_model (2048 vs. 512), so the sublayer expands each position's representation to a much higher-dimensional space before projecting it back down to d_model, giving the model extra per-position representational capacity between attention sublayers."
+  explanation: "'Position-wise' means the exact same feed-forward network — the same learned weight matrices — is applied independently to each position's vector, with no mixing across positions (that cross-position mixing already happened in the preceding attention sublayer). Functionally it's a two-layer MLP with a ReLU nonlinearity that expands d_model up to a larger d_ff (2048 vs. 512 in the base model, a 4x expansion) and projects back down to d_model, adding nonlinear capacity to each position's representation between attention sublayers. Different layers of the Transformer use different (independently learned) FFN weights — only the position dimension within one layer is shared."
+
+- type: mcq
+  question: "The Transformer ties the weight matrix of the input embedding layer, the output (target-side) embedding layer, and the pre-softmax linear transformation to the same matrix (up to a scaling factor). What is the main motivation for this weight tying?"
+  choices:
+    - "Words with related meanings should occupy similar positions in embedding space whether they're being looked up as input or predicted as output; sharing one matrix links the input and output representation spaces and substantially reduces the parameter count, since the embedding matrix scales with vocabulary size"
+    - "Weight tying is required because the encoder and decoder must have architecturally identical layer counts"
+    - "Weight tying converts the softmax into a hard-max operation, which speeds up inference"
+    - "Weight tying exists purely to satisfy GPU memory alignment requirements and has no effect on model quality"
+  answer_index: 0
+  explanation: "The input embedding matrix, the target-side embedding matrix, and the pre-softmax linear layer that projects the decoder's output back to vocabulary logits all have the same shape (vocab_size × d_model), so they can share one learned matrix. This links the space used to embed a token with the space used to predict/un-embed it, which can help learning, and it meaningfully cuts parameter count since the embedding matrix is large (proportional to vocabulary size). It has nothing to do with encoder/decoder depth matching or with turning softmax into a hard-max — softmax is still used for the actual probability distribution over the vocabulary."
