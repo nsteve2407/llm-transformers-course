@@ -66,7 +66,7 @@
     - "look ahead"
     - "future position"
     - "anticipat"
-  model_answer: "It evaluates the gradient at the position the momentum term is already about to move to, giving a correction based on where the update is heading rather than where it currently is — this typically converges faster and dampens oscillation."
+  model_answer: "It evaluates the gradient at the look-ahead position the momentum term is already about to move to, giving a correction based on where the update is heading rather than where it currently is — this typically converges faster and dampens oscillation."
   explanation: "Nesterov momentum computes the gradient after applying the momentum step (the 'look-ahead' point), giving an anticipatory correction that classical (heavy-ball) momentum, which evaluates the gradient at the current point, doesn't have."
 
 - type: mcq
