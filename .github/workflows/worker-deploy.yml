@@ -1,9 +1,11 @@
 name: Deploy chat Worker
 
-# NOTE: the `push` trigger below will show as a failed run until the
+# NOTE: the actual "Deploy" step below is skipped (not failed) until the
 # CLOUDFLARE_API_TOKEN repo secret is configured (see README "One-time setup
-# for the chat widget"). That's expected for repos that haven't finished
-# Cloudflare setup yet -- it isn't a sign anything is broken.
+# for the chat widget"). Context generation and tests still run on every
+# push, so this workflow stays useful signal even before Cloudflare setup is
+# finished -- a red run means the build/tests genuinely broke, not just that
+# the secret is missing.
 on:
   workflow_dispatch:
   push:
@@ -32,6 +34,7 @@ jobs:
       - name: Run tests
         run: npm test
       - name: Deploy
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
